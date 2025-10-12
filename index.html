@@ -49,12 +49,42 @@
       font-family: 'Courier New', monospace;
       margin: 12px 0;
     }
+    /* 修复z-index问题 */
+    .modal-overlay {
+      z-index: 1000;
+    }
+    .modal-content {
+      z-index: 1001;
+    }
+    /* 按钮交互改进 */
+    .btn-primary {
+      transition: all 0.3s ease;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+    /* 加载动画 */
+    .loader {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #3b82f6;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      margin-right: 8px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans">
-  <!-- 登录模态框 -->
-  <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-    <div class="bg-white rounded-xl p-8 w-full max-w-md">
+  <!-- 登录模态框 - 修复z-index问题 -->
+  <div id="loginModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+    <div class="modal-content bg-white rounded-xl p-8 w-full max-w-md mx-4">
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold text-gray-800">Welcome to TAI</h2>
         <button id="closeLogin" class="text-gray-500 hover:text-gray-700">
@@ -86,7 +116,7 @@
           </div>
           <a href="#" class="text-blue-600 hover:underline">Forgot password?</a>
         </div>
-        <button type="submit" class="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Login</button>
+        <button type="submit" class="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition btn-primary">Login</button>
       </form>
       
       <!-- 注册表单 -->
@@ -111,7 +141,7 @@
           <input type="checkbox" id="terms" class="h-4 w-4 text-blue-600 rounded" required>
           <label for="terms" class="ml-2 text-gray-700">I agree to the <a href="#" class="text-blue-600 hover:underline">Terms & Conditions</a></label>
         </div>
-        <button type="submit" class="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Create Account</button>
+        <button type="submit" class="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition btn-primary">Create Account</button>
       </form>
       
       <div class="mt-6 text-center text-gray-600">
@@ -130,7 +160,8 @@
       <a href="dashboard.html" class="hover:text-blue-600">Dashboard</a>
       <a href="playground.html" class="hover:text-blue-600">Playground</a>
       <a href="docs.html" class="hover:text-blue-600">Docs</a>
-      <a href="#" id="loginBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Login</a>
+      <a href="pricing.html" class="hover:text-blue-600">Pricing</a>
+      <a href="#" id="loginBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition btn-primary">Login</a>
     </nav>
   </header>
 
@@ -140,7 +171,7 @@
     <p class="text-lg max-w-2xl mx-auto opacity-90">
       Access GTC-2 Turbo, Teens models, and the TAI Assistant API. Power your apps with the next generation of AI.
     </p>
-    <button class="mt-8 px-8 py-3 bg-white text-blue-600 font-semibold rounded-full hover:bg-gray-100 transition-all transform hover:scale-110">Get API Key</button>
+    <button class="mt-8 px-8 py-3 bg-white text-blue-600 font-semibold rounded-full hover:bg-gray-100 transition-all transform hover:scale-110 btn-primary">Get API Key</button>
   </section>
 
   <!-- Features Section -->
@@ -201,6 +232,31 @@
     </div>
   </section>
 
+  <!-- Additional Resources -->
+  <section class="py-16 bg-white">
+    <div class="max-w-6xl mx-auto px-6">
+      <h3 class="text-3xl font-semibold text-gray-800 mb-12 text-center">More Resources</h3>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <a href="blog.html" class="p-4 bg-gray-50 rounded-lg hover:bg-blue-50 transition text-center">
+          <i class="fas fa-blog text-blue-600 text-xl mb-2"></i>
+          <p class="font-medium">Blog</p>
+        </a>
+        <a href="community.html" class="p-4 bg-gray-50 rounded-lg hover:bg-blue-50 transition text-center">
+          <i class="fas fa-users text-green-600 text-xl mb-2"></i>
+          <p class="font-medium">Community</p>
+        </a>
+        <a href="support.html" class="p-4 bg-gray-50 rounded-lg hover:bg-blue-50 transition text-center">
+          <i class="fas fa-headset text-purple-600 text-xl mb-2"></i>
+          <p class="font-medium">Support</p>
+        </a>
+        <a href="status.html" class="p-4 bg-gray-50 rounded-lg hover:bg-blue-50 transition text-center">
+          <i class="fas fa-signal text-orange-600 text-xl mb-2"></i>
+          <p class="font-medium">Status</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
   <!-- Footer -->
   <footer class="bg-gray-800 text-white py-12">
     <div class="max-w-6xl mx-auto px-6">
@@ -218,25 +274,25 @@
             <li><a href="dashboard.html" class="hover:text-white transition">Dashboard</a></li>
             <li><a href="playground.html" class="hover:text-white transition">Playground</a></li>
             <li><a href="docs.html" class="hover:text-white transition">Documentation</a></li>
-            <li><a href="#" class="hover:text-white transition">Pricing</a></li>
+            <li><a href="pricing.html" class="hover:text-white transition">Pricing</a></li>
           </ul>
         </div>
         <div>
           <h4 class="text-lg font-semibold mb-4">Resources</h4>
           <ul class="space-y-2 text-gray-400">
-            <li><a href="#" class="hover:text-white transition">Blog</a></li>
-            <li><a href="#" class="hover:text-white transition">Community</a></li>
-            <li><a href="#" class="hover:text-white transition">Support</a></li>
-            <li><a href="#" class="hover:text-white transition">Status</a></li>
+            <li><a href="blog.html" class="hover:text-white transition">Blog</a></li>
+            <li><a href="community.html" class="hover:text-white transition">Community</a></li>
+            <li><a href="support.html" class="hover:text-white transition">Support</a></li>
+            <li><a href="status.html" class="hover:text-white transition">Status</a></li>
           </ul>
         </div>
         <div>
           <h4 class="text-lg font-semibold mb-4">Company</h4>
           <ul class="space-y-2 text-gray-400">
-            <li><a href="#" class="hover:text-white transition">About</a></li>
-            <li><a href="#" class="hover:text-white transition">Careers</a></li>
-            <li><a href="#" class="hover:text-white transition">Contact</a></li>
-            <li><a href="#" class="hover:text-white transition">Privacy Policy</a></li>
+            <li><a href="about.html" class="hover:text-white transition">About</a></li>
+            <li><a href="careers.html" class="hover:text-white transition">Careers</a></li>
+            <li><a href="contact.html" class="hover:text-white transition">Contact</a></li>
+            <li><a href="privacy.html" class="hover:text-white transition">Privacy Policy</a></li>
           </ul>
         </div>
       </div>
@@ -279,16 +335,51 @@
     // 表单提交处理
     document.getElementById('loginForm').addEventListener('submit', function(e) {
       e.preventDefault();
-      // 这里可以添加实际的登录逻辑
-      alert('Login functionality would be implemented here');
-      document.getElementById('loginModal').classList.add('hidden');
+      const button = this.querySelector('button[type="submit"]');
+      const originalText = button.textContent;
+      
+      // 显示加载状态
+      button.innerHTML = '<div class="loader"></div>Logging in...';
+      button.disabled = true;
+      
+      // 模拟登录过程
+      setTimeout(() => {
+        // 这里可以添加实际的登录逻辑
+        alert('Login functionality would be implemented here');
+        document.getElementById('loginModal').classList.add('hidden');
+        
+        // 恢复按钮状态
+        button.innerHTML = originalText;
+        button.disabled = false;
+      }, 1500);
     });
     
     document.getElementById('registerForm').addEventListener('submit', function(e) {
       e.preventDefault();
-      // 这里可以添加实际的注册逻辑
-      alert('Registration functionality would be implemented here');
-      document.getElementById('loginModal').classList.add('hidden');
+      const button = this.querySelector('button[type="submit"]');
+      const originalText = button.textContent;
+      
+      // 显示加载状态
+      button.innerHTML = '<div class="loader"></div>Creating account...';
+      button.disabled = true;
+      
+      // 模拟注册过程
+      setTimeout(() => {
+        // 这里可以添加实际的注册逻辑
+        alert('Registration functionality would be implemented here');
+        document.getElementById('loginModal').classList.add('hidden');
+        
+        // 恢复按钮状态
+        button.innerHTML = originalText;
+        button.disabled = false;
+      }, 1500);
+    });
+    
+    // 点击模态框外部关闭
+    document.getElementById('loginModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        this.classList.add('hidden');
+      }
     });
   </script>
 </body>
