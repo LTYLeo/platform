@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TAI Developer Platform – Build with Intelligence</title>
+  <link rel="icon" href="icon.jpg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/framer-motion@10.16.3/dist/framer-motion.umd.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .gradient-bg {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .card-hover {
+      transition: all 0.3s ease;
+    }
+    .card-hover:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+    .sidebar {
+      transition: all 0.3s ease;
+    }
+    .chat-bubble-user {
+      background-color: #3b82f6;
+      color: white;
+      border-radius: 18px 18px 4px 18px;
+      padding: 12px 16px;
+      margin: 8px 0;
+      max-width: 80%;
+      align-self: flex-end;
+    }
+    .chat-bubble-ai {
+      background-color: #f1f5f9;
+      color: #334155;
+      border-radius: 18px 18px 18px 4px;
+      padding: 12px 16px;
+      margin: 8px 0;
+      max-width: 80%;
+      align-self: flex-start;
+    }
+    .code-block {
+      background-color: #1e293b;
+      color: #e2e8f0;
+      border-radius: 8px;
+      padding: 16px;
+      overflow-x: auto;
+      font-family: 'Courier New', monospace;
+      margin: 12px 0;
+    }
+  </style>
+</head>
+<body>
+  <!-- 导航栏 -->
+  
+  <!-- 文档内容 -->
+  <div class="flex pt-16">
+    <!-- 文档侧边栏 -->
+    <div class="w-64 bg-white border-r border-gray-200 p-4 h-screen overflow-y-auto sticky top-16">
+      <h3 class="font-semibold text-gray-700 mb-4">Documentation</h3>
+      
+      <div class="mb-6">
+        <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">Getting Started</h4>
+        <ul class="space-y-1">
+          <li><a href="#" class="text-blue-600 hover:text-blue-800">Introduction</a></li>
+          <li><a href="#" class="text-gray-700 hover:text-blue-600">Quick Start</a></li>
+          <li><a href="#" class="text-gray-700 hover:text-blue-600">Authentication</a></li>
+          <li><a href="#" class="text-gray-700 hover:text-blue-600">API Keys</a></li>
+        </ul>
+      </div>
+      
+      <div class="mb-6">
+        <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">API Reference</h4>
+        <ul class="space-y-1">
+          <li><a href="#" class="text-gray-700 hover:text-blue-600">Chat Completions</a></li>
+          <li><a href="#" class="text-gray-700 hover:text-blue-600">Models</a></li>
+          <li><a href="#" class="text-gray-700 hover:text-blue-600">Embeddings</a></li>
+          <li><a href="#" class="text-gray-700 hover:text-blue-600">Files</a></li>
+        </ul>
+      </div>
+      
+      <div class="mb-6">
+        <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">Guides</h4>
+        <ul class="space-y-1">
+          <li><a href="#" class="text-gray-700 hover:text-blue-600">Best Practices</a></li>
+          <li><a href="#" class="text-gray-700 hover:text-blue-600">Error Handling</a></li>
+          <li><a href="#" class="text-gray-700 hover:text-blue-600">Rate Limits</a></li>
+          <li><a href="#" class="text-gray-700 hover:text-blue-600">Migration Guide</a></li>
+        </ul>
+      </div>
+    </div>
+    
+    <!-- 主文档内容 -->
+    <div class="flex-1 p-8">
+      <div class="max-w-3xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">Getting Started with TAI API</h1>
+        
+        <div class="prose max-w-none">
+          <p class="text-lg text-gray-700 mb-6">
+            Welcome to the TAI Developer Platform! This guide will help you get started with our API and integrate TAI models into your applications.
+          </p>
+          
+          <h2 class="text-2xl font-semibold text-gray-800 mt-8 mb-4">Authentication</h2>
+          <p class="mb-4">
+            All API requests require authentication using your API key. You can find your API keys in the <a href="dashboard.html" class="text-blue-600 hover:underline">Dashboard</a>.
+          </p>
+          
+          <div class="code-block">
+            <pre>import tai
+
+# Initialize the client with your API key
+client = tai.Client(api_key="YOUR_API_KEY")</pre>
+          </div>
+          
+          <h2 class="text-2xl font-semibold text-gray-800 mt-8 mb-4">Making Your First Request</h2>
+          <p class="mb-4">
+            Here's a simple example of how to use the chat completions endpoint:
+          </p>
+          
+          <div class="code-block">
+            <pre>response = client.chat.completions.create(
+  model="gtc-2-turbo",
+  messages=[
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "Hello, how are you?"}
+  ]
+)
+
+print(response.choices[0].message.content)</pre>
+          </div>
+          
+          <h2 class="text-2xl font-semibold text-gray-800 mt-8 mb-4">Available Models</h2>
+          <p class="mb-4">
+            TAI offers several models optimized for different use cases:
+          </p>
+          
+          <div class="bg-white border border-gray-200 rounded-lg overflow-hidden mb-6">
+            <table class="w-full">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Model</th>
+                  <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Description</th>
+                  <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Best For</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200">
+                <tr>
+                  <td class="px-4 py-3 text-sm">GTC-2 Turbo</td>
+                  <td class="px-4 py-3 text-sm">Our most powerful general-purpose model</td>
+                  <td class="px-4 py-3 text-sm">Complex reasoning, code generation</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3 text-sm">Giggle (Teens)</td>
+                  <td class="px-4 py-3 text-sm">Fun, engaging personality</td>
+                  <td class="px-4 py-3 text-sm">Entertainment, casual conversation</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3 text-sm">Bro (Teens)</td>
+                  <td class="px-4 py-3 text-sm">Friendly, supportive companion</td>
+                  <td class="px-4 py-3 text-sm">Mental health, emotional support</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3 text-sm">Sweetie (Teens)</td>
+                  <td class="px-4 py-3 text-sm">Warm, caring personality</td>
+                  <td class="px-4 py-3 text-sm">Companionship, empathetic responses</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <h2 class="text-2xl font-semibold text-gray-800 mt-8 mb-4">Next Steps</h2>
+          <p class="mb-4">
+            Now that you've made your first API call, here are some resources to continue your journey:
+          </p>
+          <ul class="list-disc pl-6 mb-6 text-gray-700">
+            <li class="mb-2">Explore the <a href="#" class="text-blue-600 hover:underline">Playground</a> to test different models and parameters</li>
+            <li class="mb-2">Check out our <a href="#" class="text-blue-600 hover:underline">API Reference</a> for detailed endpoint documentation</li>
+            <li class="mb-2">Read our <a href="#" class="text-blue-600 hover:underline">Best Practices</a> guide for tips on optimizing your usage</li>
+            <li>Join our <a href="#" class="text-blue-600 hover:underline">Community</a> to connect with other developers</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TAI Developer Platform – Build with Intelligence</title>
+  <link rel="icon" href="icon.jpg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/framer-motion@10.16.3/dist/framer-motion.umd.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .gradient-bg {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .card-hover {
+      transition: all 0.3s ease;
+    }
+    .card-hover:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+    .sidebar {
+      transition: all 0.3s ease;
+    }
+    .chat-bubble-user {
+      background-color: #3b82f6;
+      color: white;
+      border-radius: 18px 18px 4px 18px;
+      padding: 12px 16px;
+      margin: 8px 0;
+      max-width: 80%;
+      align-self: flex-end;
+    }
+    .chat-bubble-ai {
+      background-color: #f1f5f9;
+      color: #334155;
+      border-radius: 18px 18px 18px 4px;
+      padding: 12px 16px;
+      margin: 8px 0;
+      max-width: 80%;
+      align-self: flex-start;
+    }
+    .code-block {
+      background-color: #1e293b;
+      color: #e2e8f0;
+      border-radius: 8px;
+      padding: 16px;
+      overflow-x: auto;
+      font-family: 'Courier New', monospace;
+      margin: 12px 0;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+  <!-- 登录模态框 -->
+  <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl p-8 w-full max-w-md">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">Welcome to TAI</h2>
+        <button id="closeLogin" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="mb-6">
+        <div class="flex border-b">
+          <button id="loginTab" class="py-2 px-4 font-medium text-blue-600 border-b-2 border-blue-600">Login</button>
+          <button id="registerTab" class="py-2 px-4 font-medium text-gray-500">Register</button>
+        </div>
+      </div>
+      
+      <!-- 登录表单 -->
+      <form id="loginForm" class="space-y-4">
+        <div>
+          <label class="block text-gray-700 mb-2" for="loginEmail">Email</label>
+          <input id="loginEmail" type="email" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="your@email.com" required>
+        </div>
+        <div>
+          <label class="block text-gray-700 mb-2" for="loginPassword">Password</label>
+          <input id="loginPassword" type="password" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="••••••••" required>
+        </div>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <input type="checkbox" id="remember" class="h-4 w-4 text-blue-600 rounded">
+            <label for="remember" class="ml-2 text-gray-700">Remember me</label>
+          </div>
+          <a href="#" class="text-blue-600 hover:underline">Forgot password?</a>
+        </div>
+        <button type="submit" class="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Login</button>
+      </form>
+      
+      <!-- 注册表单 -->
+      <form id="registerForm" class="space-y-4 hidden">
+        <div>
+          <label class="block text-gray-700 mb-2" for="registerName">Full Name</label>
+          <input id="registerName" type="text" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="John Doe" required>
+        </div>
+        <div>
+          <label class="block text-gray-700 mb-2" for="registerEmail">Email</label>
+          <input id="registerEmail" type="email" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="your@email.com" required>
+        </div>
+        <div>
+          <label class="block text-gray-700 mb-2" for="registerPassword">Password</label>
+          <input id="registerPassword" type="password" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="••••••••" required>
+        </div>
+        <div>
+          <label class="block text-gray-700 mb-2" for="registerConfirm">Confirm Password</label>
+          <input id="registerConfirm" type="password" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="••••••••" required>
+        </div>
+        <div class="flex items-center">
+          <input type="checkbox" id="terms" class="h-4 w-4 text-blue-600 rounded" required>
+          <label for="terms" class="ml-2 text-gray-700">I agree to the <a href="#" class="text-blue-600 hover:underline">Terms & Conditions</a></label>
+        </div>
+        <button type="submit" class="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Create Account</button>
+      </form>
+      
+      <div class="mt-6 text-center text-gray-600">
+        <p>By continuing, you agree to our <a href="#" class="text-blue-600 hover:underline">Terms of Service</a> and <a href="#" class="text-blue-600 hover:underline">Privacy Policy</a>.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navbar -->
+  <header class="flex justify-between items-center px-10 py-5 bg-white shadow-md sticky top-0 z-50">
+    <div class="flex items-center space-x-3">
+      <img src="icon.jpg" class="w-10 h-10 rounded-full" alt="TAI logo" />
+      <h1 class="text-2xl font-semibold text-gray-800">TAI Developer Platform</h1>
+    </div>
+    <nav class="space-x-6 flex items-center">
+      <a href="dashboard.html" class="hover:text-blue-600">Dashboard</a>
+      <a href="playground.html" class="hover:text-blue-600">Playground</a>
+      <a href="docs.html" class="hover:text-blue-600">Docs</a>
+      <a href="#" id="loginBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Login</a>
+    </nav>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="text-center py-20 gradient-bg text-white">
+    <h2 class="text-5xl font-bold mb-4">Build with TAI</h2>
+    <p class="text-lg max-w-2xl mx-auto opacity-90">
+      Access GTC-2 Turbo, Teens models, and the TAI Assistant API. Power your apps with the next generation of AI.
+    </p>
+    <button class="mt-8 px-8 py-3 bg-white text-blue-600 font-semibold rounded-full hover:bg-gray-100 transition-all transform hover:scale-110">Get API Key</button>
+  </section>
+
+  <!-- Features Section -->
+  <section class="py-16 max-w-6xl mx-auto px-6">
+    <h3 class="text-3xl font-semibold text-gray-800 mb-12 text-center">Why Choose TAI?</h3>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div class="p-6 bg-white rounded-xl shadow card-hover">
+        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+          <i class="fas fa-bolt text-blue-600 text-xl"></i>
+        </div>
+        <h4 class="text-xl font-semibold mb-2 text-gray-800">Powerful Models</h4>
+        <p class="text-gray-600">Access cutting-edge models like GTC-2 Turbo and specialized Teens models for diverse use cases.</p>
+      </div>
+      <div class="p-6 bg-white rounded-xl shadow card-hover">
+        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+          <i class="fas fa-code text-green-600 text-xl"></i>
+        </div>
+        <h4 class="text-xl font-semibold mb-2 text-gray-800">Developer Friendly</h4>
+        <p class="text-gray-600">Comprehensive documentation, SDKs, and tools to accelerate your development process.</p>
+      </div>
+      <div class="p-6 bg-white rounded-xl shadow card-hover">
+        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+          <i class="fas fa-chart-line text-purple-600 text-xl"></i>
+        </div>
+        <h4 class="text-xl font-semibold mb-2 text-gray-800">Scalable Infrastructure</h4>
+        <p class="text-gray-600">Reliable, high-performance API infrastructure designed to scale with your application needs.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Links -->
+  <section class="py-16 bg-gradient-to-r from-blue-50 to-indigo-50">
+    <div class="max-w-6xl mx-auto px-6">
+      <h3 class="text-3xl font-semibold text-gray-800 mb-12 text-center">Get Started</h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <a href="dashboard.html" class="p-6 bg-white rounded-xl shadow card-hover flex flex-col items-center text-center">
+          <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+            <i class="fas fa-tachometer-alt text-blue-600 text-2xl"></i>
+          </div>
+          <h4 class="text-xl font-semibold mb-2 text-gray-800">Dashboard</h4>
+          <p class="text-gray-600">Manage API keys, monitor usage, and track your account activity.</p>
+        </a>
+        <a href="playground.html" class="p-6 bg-white rounded-xl shadow card-hover flex flex-col items-center text-center">
+          <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+            <i class="fas fa-play-circle text-green-600 text-2xl"></i>
+          </div>
+          <h4 class="text-xl font-semibold mb-2 text-gray-800">Playground</h4>
+          <p class="text-gray-600">Experiment with TAI models in a interactive environment.</p>
+        </a>
+        <a href="docs.html" class="p-6 bg-white rounded-xl shadow card-hover flex flex-col items-center text-center">
+          <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+            <i class="fas fa-book text-purple-600 text-2xl"></i>
+          </div>
+          <h4 class="text-xl font-semibold mb-2 text-gray-800">Documentation</h4>
+          <p class="text-gray-600">Comprehensive guides and API references for developers.</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-gray-800 text-white py-12">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div>
+          <div class="flex items-center space-x-3 mb-4">
+            <img src="icon.jpg" class="w-10 h-10 rounded-full" alt="TAI logo" />
+            <h3 class="text-xl font-semibold">TAI Developer Platform</h3>
+          </div>
+          <p class="text-gray-400">Building the Future of Creation with AI.</p>
+        </div>
+        <div>
+          <h4 class="text-lg font-semibold mb-4">Platform</h4>
+          <ul class="space-y-2 text-gray-400">
+            <li><a href="dashboard.html" class="hover:text-white transition">Dashboard</a></li>
+            <li><a href="playground.html" class="hover:text-white transition">Playground</a></li>
+            <li><a href="docs.html" class="hover:text-white transition">Documentation</a></li>
+            <li><a href="#" class="hover:text-white transition">Pricing</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-lg font-semibold mb-4">Resources</h4>
+          <ul class="space-y-2 text-gray-400">
+            <li><a href="#" class="hover:text-white transition">Blog</a></li>
+            <li><a href="#" class="hover:text-white transition">Community</a></li>
+            <li><a href="#" class="hover:text-white transition">Support</a></li>
+            <li><a href="#" class="hover:text-white transition">Status</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-lg font-semibold mb-4">Company</h4>
+          <ul class="space-y-2 text-gray-400">
+            <li><a href="#" class="hover:text-white transition">About</a></li>
+            <li><a href="#" class="hover:text-white transition">Careers</a></li>
+            <li><a href="#" class="hover:text-white transition">Contact</a></li>
+            <li><a href="#" class="hover:text-white transition">Privacy Policy</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+        <p>© 2025 TAI Research. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // 登录模态框功能
+    document.getElementById('loginBtn').addEventListener('click', function(e) {
+      e.preventDefault();
+      document.getElementById('loginModal').classList.remove('hidden');
+    });
+    
+    document.getElementById('closeLogin').addEventListener('click', function() {
+      document.getElementById('loginModal').classList.add('hidden');
+    });
+    
+    // 登录/注册标签切换
+    document.getElementById('loginTab').addEventListener('click', function() {
+      document.getElementById('loginTab').classList.add('text-blue-600', 'border-blue-600');
+      document.getElementById('loginTab').classList.remove('text-gray-500');
+      document.getElementById('registerTab').classList.add('text-gray-500');
+      document.getElementById('registerTab').classList.remove('text-blue-600', 'border-blue-600');
+      document.getElementById('loginForm').classList.remove('hidden');
+      document.getElementById('registerForm').classList.add('hidden');
+    });
+    
+    document.getElementById('registerTab').addEventListener('click', function() {
+      document.getElementById('registerTab').classList.add('text-blue-600', 'border-blue-600');
+      document.getElementById('registerTab').classList.remove('text-gray-500');
+      document.getElementById('loginTab').classList.add('text-gray-500');
+      document.getElementById('loginTab').classList.remove('text-blue-600', 'border-blue-600');
+      document.getElementById('registerForm').classList.remove('hidden');
+      document.getElementById('loginForm').classList.add('hidden');
+    });
+    
+    // 表单提交处理
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      // 这里可以添加实际的登录逻辑
+      alert('Login functionality would be implemented here');
+      document.getElementById('loginModal').classList.add('hidden');
+    });
+    
+    document.getElementById('registerForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      // 这里可以添加实际的注册逻辑
+      alert('Registration functionality would be implemented here');
+      document.getElementById('loginModal').classList.add('hidden');
+    });
+  </script>
+</body>
+</html>

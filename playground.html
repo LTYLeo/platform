@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TAI Developer Platform – Build with Intelligence</title>
+  <link rel="icon" href="icon.jpg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/framer-motion@10.16.3/dist/framer-motion.umd.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .gradient-bg {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .card-hover {
+      transition: all 0.3s ease;
+    }
+    .card-hover:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+    .sidebar {
+      transition: all 0.3s ease;
+    }
+    .chat-bubble-user {
+      background-color: #3b82f6;
+      color: white;
+      border-radius: 18px 18px 4px 18px;
+      padding: 12px 16px;
+      margin: 8px 0;
+      max-width: 80%;
+      align-self: flex-end;
+    }
+    .chat-bubble-ai {
+      background-color: #f1f5f9;
+      color: #334155;
+      border-radius: 18px 18px 18px 4px;
+      padding: 12px 16px;
+      margin: 8px 0;
+      max-width: 80%;
+      align-self: flex-start;
+    }
+    .code-block {
+      background-color: #1e293b;
+      color: #e2e8f0;
+      border-radius: 8px;
+      padding: 16px;
+      overflow-x: auto;
+      font-family: 'Courier New', monospace;
+      margin: 12px 0;
+    }
+  </style>
+</head>
+<body>
+  <!-- 导航栏 -->
+  
+  <!-- Playground内容 -->
+  <div class="flex h-screen pt-16">
+    <!-- 侧边栏 -->
+    <div class="w-64 bg-white border-r border-gray-200 p-4 overflow-y-auto">
+      <h3 class="font-semibold text-gray-700 mb-4">Configuration</h3>
+      
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Model</label>
+        <select class="w-full border border-gray-300 rounded-lg p-2">
+          <option>GTC-2 Turbo</option>
+          <option>Giggle (Teens)</option>
+          <option>Bro (Teens)</option>
+          <option>Sweetie (Teens)</option>
+        </select>
+      </div>
+      
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Temperature</label>
+        <input type="range" min="0" max="1" step="0.1" value="0.7" class="w-full">
+        <div class="flex justify-between text-xs text-gray-500 mt-1">
+          <span>0</span>
+          <span>0.7</span>
+          <span>1</span>
+        </div>
+      </div>
+      
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Max Tokens</label>
+        <input type="number" value="256" class="w-full border border-gray-300 rounded-lg p-2">
+      </div>
+      
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-2">System Prompt</label>
+        <textarea class="w-full border border-gray-300 rounded-lg p-2 h-32" placeholder="You are a helpful assistant..."></textarea>
+      </div>
+      
+      <button class="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Save Configuration</button>
+    </div>
+    
+    <!-- 主聊天区域 -->
+    <div class="flex-1 flex flex-col">
+      <!-- 聊天历史 -->
+      <div class="flex-1 p-6 overflow-y-auto bg-gray-50">
+        <div class="max-w-3xl mx-auto">
+          <div class="flex flex-col">
+            <!-- 用户消息 -->
+            <div class="chat-bubble-user">
+              Hello, can you help me write a Python function to calculate factorial?
+            </div>
+            
+            <!-- AI回复 -->
+            <div class="chat-bubble-ai">
+              <p>Sure! Here's a Python function to calculate factorial:</p>
+              <div class="code-block">
+                <pre>def factorial(n):
+    if n == 0:
+        return 1
+    else:
+        return n * factorial(n-1)</pre>
+              </div>
+              <p>This function uses recursion to calculate the factorial of a number.</p>
+            </div>
+            
+            <!-- 更多消息 -->
+          </div>
+        </div>
+      </div>
+      
+      <!-- 输入区域 -->
+      <div class="border-t border-gray-200 p-4 bg-white">
+        <div class="max-w-3xl mx-auto">
+          <div class="flex">
+            <textarea class="flex-1 border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Type your message here..." rows="2"></textarea>
+            <button class="ml-3 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition self-end">
+              <i class="fas fa-paper-plane"></i>
+            </button>
+          </div>
+          <div class="flex justify-between mt-2 text-sm text-gray-500">
+            <div>
+              <button class="hover:text-gray-700 mr-3"><i class="fas fa-sliders-h mr-1"></i> Parameters</button>
+              <button class="hover:text-gray-700"><i class="fas fa-trash-alt mr-1"></i> Clear</button>
+            </div>
+            <div>
+              <span>0 tokens</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
