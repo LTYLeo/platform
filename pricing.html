@@ -25,25 +25,32 @@
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
     }
-    .pricing-card {
+    .model-card {
       transition: all 0.3s ease;
-      border: 2px solid transparent;
+      border: 1px solid #e5e7eb;
     }
-    .pricing-card.popular {
-      border-color: #3b82f6;
-      position: relative;
+    .model-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
     }
-    .popular-badge {
-      position: absolute;
-      top: -12px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: #3b82f6;
-      color: white;
-      padding: 4px 16px;
-      border-radius: 20px;
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
       font-size: 0.75rem;
       font-weight: 600;
+    }
+    .badge-fast {
+      background-color: #dcfce7;
+      color: #166534;
+    }
+    .badge-balanced {
+      background-color: #fef3c7;
+      color: #92400e;
+    }
+    .badge-powerful {
+      background-color: #dbeafe;
+      color: #1e40af;
     }
   </style>
 </head>
@@ -67,154 +74,371 @@
   <!-- Pricing Hero Section -->
   <section class="py-16 gradient-bg text-white">
     <div class="max-w-4xl mx-auto text-center px-6">
-      <h1 class="text-4xl font-bold mb-4">Simple, Transparent Pricing</h1>
-      <p class="text-xl opacity-90 mb-8">Choose the plan that works best for your project. No hidden fees.</p>
-      <div class="inline-flex bg-white bg-opacity-20 rounded-full p-1">
-        <button id="monthlyToggle" class="px-6 py-2 rounded-full bg-white text-blue-600 font-medium">Monthly</button>
-        <button id="yearlyToggle" class="px-6 py-2 rounded-full text-white font-medium">Yearly <span class="text-green-300 text-sm">(Save 20%)</span></button>
+      <h1 class="text-4xl font-bold mb-4">Pay-As-You-Go Pricing</h1>
+      <p class="text-xl opacity-90 mb-8">Only pay for what you use. No monthly commitments, no hidden fees.</p>
+      <div class="inline-flex items-center bg-white bg-opacity-20 rounded-full px-4 py-2">
+        <i class="fas fa-coins text-yellow-300 mr-2"></i>
+        <span>All prices in CNY (Chinese Yuan)</span>
       </div>
     </div>
   </section>
 
-  <!-- Pricing Cards -->
+  <!-- Top-up Section -->
+  <section class="py-12 bg-white">
+    <div class="max-w-4xl mx-auto px-6">
+      <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-8 text-white text-center">
+        <h2 class="text-3xl font-bold mb-4">Start Building Today</h2>
+        <p class="text-xl opacity-90 mb-6">Add credit to your account and only pay for what you use</p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <div class="flex items-center bg-white bg-opacity-20 rounded-lg p-4">
+            <i class="fas fa-wallet text-2xl mr-3"></i>
+            <div class="text-left">
+              <p class="text-sm opacity-80">Current Balance</p>
+              <p class="text-xl font-bold">¥0.00</p>
+            </div>
+          </div>
+          <button class="px-8 py-3 bg-white text-blue-600 rounded-lg font-bold hover:bg-gray-100 transition btn-primary text-lg">
+            <i class="fas fa-plus-circle mr-2"></i>
+            Add Credit
+          </button>
+        </div>
+        <p class="mt-4 text-sm opacity-80">New users get 5,000 tokens free to get started</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Model Pricing -->
   <section class="py-16">
     <div class="max-w-6xl mx-auto px-6">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <!-- Starter Plan -->
-        <div class="pricing-card bg-white rounded-2xl shadow-lg p-8">
-          <h3 class="text-2xl font-bold text-gray-800 mb-2">Starter</h3>
-          <p class="text-gray-600 mb-6">Perfect for hobby projects and experimentation</p>
-          <div class="mb-6">
-            <span class="text-4xl font-bold text-gray-800">$10</span>
-            <span class="text-gray-600">/month</span>
-          </div>
-          <ul class="space-y-4 mb-8">
-            <li class="flex items-center">
-              <i class="fas fa-check text-green-500 mr-3"></i>
-              <span>10,000 tokens per month</span>
-            </li>
-            <li class="flex items-center">
-              <i class="fas fa-check text-green-500 mr-3"></i>
-              <span>Access to GTC-2 Turbo</span>
-            </li>
-            <li class="flex items-center">
-              <i class="fas fa-check text-green-500 mr-3"></i>
-              <span>Basic Teens models</span>
-            </li>
-            <li class="flex items-center">
-              <i class="fas fa-check text-green-500 mr-3"></i>
-              <span>Community support</span>
-            </li>
-            <li class="flex items-center text-gray-400">
-              <i class="fas fa-times mr-3"></i>
-              <span>Priority support</span>
-            </li>
-            <li class="flex items-center text-gray-400">
-              <i class="fas fa-times mr-3"></i>
-              <span>Advanced models</span>
-            </li>
-          </ul>
-          <button class="w-full py-3 bg-gray-100 text-gray-800 rounded-lg font-medium hover:bg-gray-200 transition">Get Started</button>
+      <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">Model Pricing & Performance</h2>
+      
+      <!-- GTC-2 Turbo -->
+      <div class="mb-12">
+        <div class="flex items-center mb-6">
+          <h3 class="text-2xl font-bold text-gray-800 mr-4">GTC-2 Turbo</h3>
+          <span class="badge badge-powerful">Most Powerful</span>
         </div>
-
-        <!-- Pro Plan (Popular) -->
-        <div class="pricing-card popular bg-white rounded-2xl shadow-lg p-8">
-          <div class="popular-badge">MOST POPULAR</div>
-          <h3 class="text-2xl font-bold text-gray-800 mb-2">Pro</h3>
-          <p class="text-gray-600 mb-6">Ideal for growing applications and startups</p>
-          <div class="mb-6">
-            <span class="text-4xl font-bold text-gray-800">$49</span>
-            <span class="text-gray-600">/month</span>
+        <p class="text-gray-600 mb-6 max-w-3xl">Our most advanced model with exceptional reasoning capabilities, perfect for complex tasks, coding, and creative applications.</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="model-card bg-white rounded-xl shadow p-6">
+            <h4 class="text-lg font-semibold text-gray-800 mb-4">Input Tokens</h4>
+            <div class="flex items-baseline mb-2">
+              <span class="text-3xl font-bold text-gray-800">¥15</span>
+              <span class="text-gray-600 ml-2">per 1M tokens</span>
+            </div>
+            <p class="text-sm text-gray-500">Text you send to the model</p>
           </div>
-          <ul class="space-y-4 mb-8">
-            <li class="flex items-center">
-              <i class="fas fa-check text-green-500 mr-3"></i>
-              <span>100,000 tokens per month</span>
-            </li>
-            <li class="flex items-center">
-              <i class="fas fa-check text-green-500 mr-3"></i>
-              <span>Access to all models</span>
-            </li>
-            <li class="flex items-center">
-              <i class="fas fa-check text-green-500 mr-3"></i>
-              <span>All Teens models</span>
-            </li>
-            <li class="flex items-center">
-              <i class="fas fa-check text-green-500 mr-3"></i>
-              <span>Priority support</span>
-            </li>
-            <li class="flex items-center">
-              <i class="fas fa-check text-green-500 mr-3"></i>
-              <span>Advanced customization</span>
-            </li>
-            <li class="flex items-center">
-              <i class="fas fa-check text-green-500 mr-3"></i>
-              <span>Usage analytics</span>
-            </li>
-          </ul>
-          <button class="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition btn-primary">Get Started</button>
+          
+          <div class="model-card bg-white rounded-xl shadow p-6">
+            <h4 class="text-lg font-semibold text-gray-800 mb-4">Output Tokens</h4>
+            <div class="flex items-baseline mb-2">
+              <span class="text-3xl font-bold text-gray-800">¥60</span>
+              <span class="text-gray-600 ml-2">per 1M tokens</span>
+            </div>
+            <p class="text-sm text-gray-500">Text generated by the model</p>
+          </div>
+          
+          <div class="model-card bg-white rounded-xl shadow p-6">
+            <h4 class="text-lg font-semibold text-gray-800 mb-4">Performance</h4>
+            <div class="space-y-3">
+              <div class="flex justify-between">
+                <span class="text-gray-600">Speed:</span>
+                <span class="font-medium">Fast</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">Context:</span>
+                <span class="font-medium">128K tokens</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">Best for:</span>
+                <span class="font-medium text-blue-600">Complex tasks</span>
+              </div>
+            </div>
+          </div>
         </div>
-
-        <!-- Enterprise Plan -->
-        <div class="pricing-card bg-white rounded-2xl shadow-lg p-8">
-          <h3 class="text-2xl font-bold text-gray-800 mb-2">Enterprise</h3>
-          <p class="text-gray-600 mb-6">For large-scale applications with custom needs</p>
-          <div class="mb-6">
-            <span class="text-4xl font-bold text-gray-800">Custom</span>
+      </div>
+      
+      <!-- Teens Models -->
+      <div class="mb-12">
+        <h3 class="text-2xl font-bold text-gray-800 mb-6">Teens Models</h3>
+        <p class="text-gray-600 mb-6 max-w-3xl">Specialized models with unique personalities, optimized for specific interaction styles and use cases.</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Giggle -->
+          <div class="model-card bg-white rounded-xl shadow p-6">
+            <div class="flex items-center mb-4">
+              <h4 class="text-xl font-bold text-gray-800 mr-3">Giggle</h4>
+              <span class="badge badge-fast">Fast</span>
+            </div>
+            <p class="text-gray-600 mb-4">Fun, energetic personality perfect for entertainment and casual conversation.</p>
+            
+            <div class="space-y-4">
+              <div>
+                <div class="flex justify-between mb-1">
+                  <span class="text-gray-600">Input:</span>
+                  <span class="font-medium">¥8 / 1M tokens</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">Output:</span>
+                  <span class="font-medium">¥32 / 1M tokens</span>
+                </div>
+              </div>
+              
+              <div class="pt-4 border-t border-gray-200">
+                <div class="flex justify-between mb-1">
+                  <span class="text-gray-600">Speed:</span>
+                  <span class="font-medium">Very Fast</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">Context:</span>
+                  <span class="font-medium">64K tokens</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <ul class="space-y-4 mb-8">
-            <li class="flex items-center">
-              <i class="fas fa-check text-green-500 mr-3"></i>
-              <span>Unlimited tokens</span>
-            </li>
-            <li class="flex items-center">
-              <i class="fas fa-check text-green-500 mr-3"></i>
-              <span>All models + early access</span>
-            </li>
-            <li class="flex items-center">
-              <i class="fas fa-check text-green-500 mr-3"></i>
-              <span>Dedicated infrastructure</span>
-            </li>
-            <li class="flex items-center">
-              <i class="fas fa-check text-green-500 mr-3"></i>
-              <span>24/7 premium support</span>
-            </li>
-            <li class="flex items-center">
-              <i class="fas fa-check text-green-500 mr-3"></i>
-              <span>Custom model training</span>
-            </li>
-            <li class="flex items-center">
-              <i class="fas fa-check text-green-500 mr-3"></i>
-              <span>SLA guarantee</span>
-            </li>
-          </ul>
-          <button class="w-full py-3 bg-gray-800 text-white rounded-lg font-medium hover:bg-gray-900 transition">Contact Sales</button>
+          
+          <!-- Bro -->
+          <div class="model-card bg-white rounded-xl shadow p-6">
+            <div class="flex items-center mb-4">
+              <h4 class="text-xl font-bold text-gray-800 mr-3">Bro</h4>
+              <span class="badge badge-balanced">Balanced</span>
+            </div>
+            <p class="text-gray-600 mb-4">Friendly, supportive companion ideal for mental health and emotional support applications.</p>
+            
+            <div class="space-y-4">
+              <div>
+                <div class="flex justify-between mb-1">
+                  <span class="text-gray-600">Input:</span>
+                  <span class="font-medium">¥10 / 1M tokens</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">Output:</span>
+                  <span class="font-medium">¥40 / 1M tokens</span>
+                </div>
+              </div>
+              
+              <div class="pt-4 border-t border-gray-200">
+                <div class="flex justify-between mb-1">
+                  <span class="text-gray-600">Speed:</span>
+                  <span class="font-medium">Fast</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">Context:</span>
+                  <span class="font-medium">64K tokens</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Sweetie -->
+          <div class="model-card bg-white rounded-xl shadow p-6">
+            <div class="flex items-center mb-4">
+              <h4 class="text-xl font-bold text-gray-800 mr-3">Sweetie</h4>
+              <span class="badge badge-balanced">Balanced</span>
+            </div>
+            <p class="text-gray-600 mb-4">Warm, caring personality designed for companionship and empathetic interactions.</p>
+            
+            <div class="space-y-4">
+              <div>
+                <div class="flex justify-between mb-1">
+                  <span class="text-gray-600">Input:</span>
+                  <span class="font-medium">¥10 / 1M tokens</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">Output:</span>
+                  <span class="font-medium">¥40 / 1M tokens</span>
+                </div>
+              </div>
+              
+              <div class="pt-4 border-t border-gray-200">
+                <div class="flex justify-between mb-1">
+                  <span class="text-gray-600">Speed:</span>
+                  <span class="font-medium">Fast</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">Context:</span>
+                  <span class="font-medium">64K tokens</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Legacy Models -->
+      <div>
+        <h3 class="text-2xl font-bold text-gray-800 mb-6">Legacy Models</h3>
+        <p class="text-gray-600 mb-6 max-w-3xl">Our earlier models, still available for compatibility with existing applications.</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- GTC-1 Standard -->
+          <div class="model-card bg-white rounded-xl shadow p-6">
+            <div class="flex items-center mb-4">
+              <h4 class="text-xl font-bold text-gray-800 mr-3">GTC-1 Standard</h4>
+              <span class="badge badge-balanced">Economical</span>
+            </div>
+            <p class="text-gray-600 mb-4">Our reliable base model with solid performance for general-purpose tasks.</p>
+            
+            <div class="space-y-4">
+              <div>
+                <div class="flex justify-between mb-1">
+                  <span class="text-gray-600">Input:</span>
+                  <span class="font-medium">¥5 / 1M tokens</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">Output:</span>
+                  <span class="font-medium">¥20 / 1M tokens</span>
+                </div>
+              </div>
+              
+              <div class="pt-4 border-t border-gray-200">
+                <div class="flex justify-between mb-1">
+                  <span class="text-gray-600">Speed:</span>
+                  <span class="font-medium">Balanced</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">Context:</span>
+                  <span class="font-medium">32K tokens</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- GTC-1 Lite -->
+          <div class="model-card bg-white rounded-xl shadow p-6">
+            <div class="flex items-center mb-4">
+              <h4 class="text-xl font-bold text-gray-800 mr-3">GTC-1 Lite</h4>
+              <span class="badge badge-fast">Budget</span>
+            </div>
+            <p class="text-gray-600 mb-4">Lightweight model optimized for speed and cost-efficiency.</p>
+            
+            <div class="space-y-4">
+              <div>
+                <div class="flex justify-between mb-1">
+                  <span class="text-gray-600">Input:</span>
+                  <span class="font-medium">¥3 / 1M tokens</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">Output:</span>
+                  <span class="font-medium">¥12 / 1M tokens</span>
+                </div>
+              </div>
+              
+              <div class="pt-4 border-t border-gray-200">
+                <div class="flex justify-between mb-1">
+                  <span class="text-gray-600">Speed:</span>
+                  <span class="font-medium">Very Fast</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">Context:</span>
+                  <span class="font-medium">16K tokens</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Token Calculator -->
+  <section class="py-16 bg-gray-50">
+    <div class="max-w-4xl mx-auto px-6">
+      <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">Token Calculator</h2>
+      <div class="bg-white rounded-xl shadow p-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div>
+            <h3 class="text-xl font-semibold text-gray-800 mb-4">Estimate Your Costs</h3>
+            <p class="text-gray-600 mb-6">See how much your usage might cost based on your expected token consumption.</p>
+            
+            <div class="space-y-4">
+              <div>
+                <label class="block text-gray-700 mb-2" for="modelSelect">Select Model</label>
+                <select id="modelSelect" class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="gtc2-turbo">GTC-2 Turbo</option>
+                  <option value="giggle">Giggle (Teens)</option>
+                  <option value="bro">Bro (Teens)</option>
+                  <option value="sweetie">Sweetie (Teens)</option>
+                  <option value="gtc1-standard">GTC-1 Standard</option>
+                  <option value="gtc1-lite">GTC-1 Lite</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-gray-700 mb-2" for="inputTokens">Input Tokens (thousands)</label>
+                <input type="number" id="inputTokens" value="100" class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              </div>
+              
+              <div>
+                <label class="block text-gray-700 mb-2" for="outputTokens">Output Tokens (thousands)</label>
+                <input type="number" id="outputTokens" value="50" class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex flex-col justify-center">
+            <div class="bg-blue-50 rounded-lg p-6 text-center">
+              <p class="text-gray-600 mb-2">Estimated Cost</p>
+              <p id="estimatedCost" class="text-3xl font-bold text-blue-600 mb-4">¥0.00</p>
+              <p class="text-sm text-gray-500">Based on your inputs and selected model</p>
+            </div>
+            
+            <div class="mt-6 text-center">
+              <button class="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition btn-primary">
+                <i class="fas fa-calculator mr-2"></i>
+                Calculate
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
   <!-- FAQ Section -->
-  <section class="py-16 bg-gray-50">
+  <section class="py-16 bg-white">
     <div class="max-w-4xl mx-auto px-6">
       <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">Frequently Asked Questions</h2>
       <div class="space-y-6">
-        <div class="bg-white rounded-xl shadow p-6">
-          <h3 class="text-xl font-semibold text-gray-800 mb-2">How does token billing work?</h3>
-          <p class="text-gray-600">Tokens are consumed based on the length of your input and output. We bill based on the total tokens used across all API calls in a billing cycle. Unused tokens do not roll over to the next month.</p>
+        <div class="bg-gray-50 rounded-xl p-6">
+          <h3 class="text-xl font-semibold text-gray-800 mb-2">How does pay-as-you-go billing work?</h3>
+          <p class="text-gray-600">You add credit to your account, and we deduct costs based on your actual usage. There are no monthly subscriptions or commitments. You only pay for the tokens you consume.</p>
         </div>
-        <div class="bg-white rounded-xl shadow p-6">
-          <h3 class="text-xl font-semibold text-gray-800 mb-2">Can I change plans anytime?</h3>
-          <p class="text-gray-600">Yes, you can upgrade or downgrade your plan at any time. When upgrading, you'll get immediate access to the new features. When downgrading, the change will take effect at the start of your next billing cycle.</p>
+        <div class="bg-gray-50 rounded-xl p-6">
+          <h3 class="text-xl font-semibold text-gray-800 mb-2">What's the difference between input and output tokens?</h3>
+          <p class="text-gray-600">Input tokens are the text you send to our models. Output tokens are the text generated by our models. Output tokens typically cost more because generating text requires more computational resources.</p>
         </div>
-        <div class="bg-white rounded-xl shadow p-6">
-          <h3 class="text-xl font-semibold text-gray-800 mb-2">Is there a free trial?</h3>
-          <p class="text-gray-600">All new accounts receive 5,000 free tokens to test our API. No credit card required to get started.</p>
+        <div class="bg-gray-50 rounded-xl p-6">
+          <h3 class="text-xl font-semibold text-gray-800 mb-2">Is there a free tier?</h3>
+          <p class="text-gray-600">Yes! All new accounts receive 5,000 tokens completely free to test our API and build your first integration.</p>
         </div>
-        <div class="bg-white rounded-xl shadow p-6">
+        <div class="bg-gray-50 rounded-xl p-6">
           <h3 class="text-xl font-semibold text-gray-800 mb-2">What payment methods do you accept?</h3>
-          <p class="text-gray-600">We accept all major credit cards (Visa, MasterCard, American Express), PayPal, and for Enterprise plans we also support bank transfers.</p>
+          <p class="text-gray-600">We accept Alipay, WeChat Pay, and major credit cards. All transactions are processed securely.</p>
         </div>
+        <div class="bg-gray-50 rounded-xl p-6">
+          <h3 class="text-xl font-semibold text-gray-800 mb-2">How accurate is the token calculator?</h3>
+          <p class="text-gray-600">The calculator provides estimates based on standard tokenization. Actual usage may vary slightly depending on your specific inputs and model parameters.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About Us Section -->
+  <section class="py-16 bg-gradient-to-r from-blue-50 to-indigo-50">
+    <div class="max-w-4xl mx-auto px-6 text-center">
+      <h2 class="text-3xl font-bold text-gray-800 mb-6">Built by Students, For Developers</h2>
+      <p class="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+        We're a team of high school students passionate about AI. Despite limited resources, we've created TAI to make powerful AI models accessible to everyone. Your support helps us continue improving and expanding our services.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="about.html" class="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition btn-primary">
+          Learn Our Story
+        </a>
+        <a href="contact.html" class="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition">
+          Contact Us
+        </a>
       </div>
     </div>
   </section>
@@ -265,24 +489,38 @@
   </footer>
 
   <script>
-    // 价格切换功能
-    document.getElementById('monthlyToggle').addEventListener('click', function() {
-      this.classList.add('bg-white', 'text-blue-600');
-      document.getElementById('yearlyToggle').classList.remove('bg-white', 'text-blue-600');
-      document.getElementById('yearlyToggle').classList.add('text-white');
-      
-      // 这里可以添加切换价格的逻辑
-      console.log('Switched to monthly pricing');
-    });
+    // Token Calculator Functionality
+    const modelPrices = {
+      'gtc2-turbo': { input: 15, output: 60 },
+      'giggle': { input: 8, output: 32 },
+      'bro': { input: 10, output: 40 },
+      'sweetie': { input: 10, output: 40 },
+      'gtc1-standard': { input: 5, output: 20 },
+      'gtc1-lite': { input: 3, output: 12 }
+    };
     
-    document.getElementById('yearlyToggle').addEventListener('click', function() {
-      this.classList.add('bg-white', 'text-blue-600');
-      document.getElementById('monthlyToggle').classList.remove('bg-white', 'text-blue-600');
-      document.getElementById('monthlyToggle').classList.add('text-white');
+    function calculateCost() {
+      const model = document.getElementById('modelSelect').value;
+      const inputTokens = parseInt(document.getElementById('inputTokens').value) || 0;
+      const outputTokens = parseInt(document.getElementById('outputTokens').value) || 0;
       
-      // 这里可以添加切换价格的逻辑
-      console.log('Switched to yearly pricing');
-    });
+      const inputCost = (inputTokens / 1000) * (modelPrices[model].input / 1000);
+      const outputCost = (outputTokens / 1000) * (modelPrices[model].output / 1000);
+      const totalCost = inputCost + outputCost;
+      
+      document.getElementById('estimatedCost').textContent = `¥${totalCost.toFixed(2)}`;
+    }
+    
+    // Initial calculation
+    calculateCost();
+    
+    // Add event listeners
+    document.getElementById('modelSelect').addEventListener('change', calculateCost);
+    document.getElementById('inputTokens').addEventListener('input', calculateCost);
+    document.getElementById('outputTokens').addEventListener('input', calculateCost);
+    
+    // Calculate button
+    document.querySelector('button').addEventListener('click', calculateCost);
   </script>
 </body>
 </html>

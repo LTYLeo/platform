@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Careers - TAI Research</title>
+  <link rel="icon" href="icon.jpg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .gradient-bg {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .card-hover {
+      transition: all 0.3s ease;
+    }
+    .card-hover:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+    .btn-primary {
+      transition: all 0.3s ease;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+  <!-- Navbar -->
+  <header class="flex justify-between items-center px-10 py-5 bg-white shadow-md sticky top-0 z-50">
+    <div class="flex items-center space-x-3">
+      <img src="icon.jpg" class="w-10 h-10 rounded-full" alt="TAI logo" />
+      <h1 class="text-2xl font-semibold text-gray-800">TAI Developer Platform</h1>
+    </div>
+    <nav class="space-x-6 flex items-center">
+      <a href="index.html" class="hover:text-blue-600">Home</a>
+      <a href="dashboard.html" class="hover:text-blue-600">Dashboard</a>
+      <a href="playground.html" class="hover:text-blue-600">Playground</a>
+      <a href="docs.html" class="hover:text-blue-600">Docs</a>
+      <a href="pricing.html" class="hover:text-blue-600">Pricing</a>
+      <a href="#" id="loginBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition btn-primary">Login</a>
+    </nav>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="py-20 gradient-bg text-white">
+    <div class="max-w-6xl mx-auto px-6 text-center">
+      <h1 class="text-5xl font-bold mb-6">Build the Future With Us</h1>
+      <p class="text-xl opacity-90 max-w-3xl mx-auto">
+        Join our team of student researchers and engineers pushing the boundaries of artificial intelligence.
+      </p>
+    </div>
+  </section>
+
+  <!-- Why Join Section -->
+  <section class="py-16 bg-white">
+    <div class="max-w-4xl mx-auto px-6">
+      <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">Why Join TAI Research?</h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="bg-blue-50 rounded-xl p-6">
+          <h3 class="text-xl font-bold text-gray-800 mb-3">Real Impact</h3>
+          <p class="text-gray-700">
+            At TAI, you won't be working on theoretical projects. You'll be building and shipping real AI products used by developers around the world.
+          </p>
+        </div>
+        
+        <div class="bg-green-50 rounded-xl p-6">
+          <h3 class="text-xl font-bold text-gray-800 mb-3">Learn by Doing</h3>
+          <p class="text-gray-700">
+            We believe the best way to learn AI is to build AI. You'll gain hands-on experience with cutting-edge technologies and methodologies.
+          </p>
+        </div>
+        
+        <div class="bg-purple-50 rounded-xl p-6">
+          <h3 class="text-xl font-bold text-gray-800 mb-3">Flexible Commitment</h3>
+          <p class="text-gray-700">
+            We understand you're a student first. We offer flexible hours and remote work options that fit around your academic schedule.
+          </p>
+        </div>
+        
+        <div class="bg-yellow-50 rounded-xl p-6">
+          <h3 class="text-xl font-bold text-gray-800 mb-3">Community of Peers</h3>
+          <p class="text-gray-700">
+            Join a community of like-minded students passionate about AI. Collaborate, learn, and grow together with talented peers.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Open Positions -->
+  <section class="py-16 bg-gray-50">
+    <div class="max-w-4xl mx-auto px-6">
+      <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">Open Positions</h2>
+      
+      <div class="space-y-6">
+        <!-- Position 1 -->
+        <div class="bg-white rounded-xl shadow p-6 card-hover">
+          <div class="flex flex-col md:flex-row md:items-center justify-between mb-4">
+            <div>
+              <h3 class="text-2xl font-bold text-gray-800">AI Research Intern</h3>
+              <div class="flex flex-wrap gap-2 mt-2">
+                <span class="px-3 py-1 bg-blue-100 text-blue-600 rounded-full text-sm">Remote</span>
+                <span class="px-3 py-1 bg-green-100 text-green-600 rounded-full text-sm">Part-time</span>
+                <span class="px-3 py-1 bg-purple-100 text-purple-600 rounded-full text-sm">Student Position</span>
+              </div>
+            </div>
+            <div class="mt-4 md:mt-0">
+              <a href="#apply" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition btn-primary">
+                Apply Now
+              </a>
+            </div>
+          </div>
+          
+          <p class="text-gray-600 mb-4">
+            Join our research team to help develop and improve our AI models. You'll work on cutting-edge problems in natural language processing and machine learning.
+          </p>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h4 class="font-semibold text-gray-800 mb-2">What You'll Do:</h4>
+              <ul class="text-gray-600 list-disc pl-5 space-y-1">
+                <li>Experiment with novel model architectures</li>
+                <li>Analyze model performance and identify improvements</li>
+                <li>Collaborate on research papers and open-source projects</li>
+                <li>Help curate and preprocess training datasets</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h4 class="font-semibold text-gray-800 mb-2">We're Looking For:</h4>
+              <ul class="text-gray-600 list-disc pl-5 space-y-1">
+                <li>Strong foundation in machine learning concepts</li>
+                <li>Experience with Python and ML frameworks (PyTorch/TensorFlow)</li>
+                <li>Curiosity and willingness to learn new techniques</li>
+                <li>Currently enrolled in a STEM degree program</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Position 2 -->
+        <div class="bg-white rounded-xl shadow p-6 card-hover">
+          <div class="flex flex-col md:flex-row md:items-center justify-between mb-4">
+            <div>
+              <h3 class="text-2xl font-bold text-gray-800">Software Engineering Intern</h3>
+              <div class="flex flex-wrap gap-2 mt-2">
+                <span class="px-3 py-1 bg-blue-100 text-blue-600 rounded-full text-sm">Remote</span>
+                <span class="px-3 py-1 bg-green-100 text-green-600 rounded-full text-sm">Part-time</span>
+                <span class="px-3 py-1 bg-purple-100 text-purple-600 rounded-full text-sm">Student Position</span>
+              </div>
+            </div>
+            <div class="mt-4 md:mt-0">
+              <a href="#apply" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition btn-primary">
+                Apply Now
+              </a>
+            </div>
+          </div>
+          
+          <p class="text-gray-600 mb-4">
+            Help build and scale our developer platform. You'll work on our API infrastructure, developer tools, and user-facing applications.
+          </p>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h4 class="font-semibold text-gray-800 mb-2">What You'll Do:</h4>
+              <ul class="text-gray-600 list-disc pl-5 space-y-1">
+                <li>Develop and maintain our API services</li>
+                <li>Build user interfaces for our developer tools</li>
+                <li>Optimize system performance and reliability</li>
+                <li>Collaborate with the research team on model deployment</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h4 class="font-semibold text-gray-800 mb-2">We're Looking For:</h4>
+              <ul class="text-gray-600 list-disc pl-5 space-y-1">
+                <li>Proficiency in Python, JavaScript, or similar languages</li>
+                <li>Familiarity with web frameworks and API design</li>
+                <li>Understanding of software engineering best practices</li>
+                <li>Interest in AI/ML applications</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Position 3 -->
+        <div class="bg-white rounded-xl shadow p-6 card-hover">
+          <div class="flex flex-col md:flex-row md:items-center justify-between mb-4">
+            <div>
+              <h3 class="text-2xl font-bold text-gray-800">Community & Outreach Lead</h3>
+              <div class="flex flex-wrap gap-2 mt-2">
+                <span class="px-3 py-1 bg-blue-100 text-blue-600 rounded-full text-sm">Remote</span>
+                <span class="px-3 py-1 bg-green-100 text-green-600 rounded-full text-sm">Part-time</span>
+                <span class="px-3 py-1 bg-purple-100 text-purple-600 rounded-full text-sm">Student Position</span>
+              </div>
+            </div>
+            <div class="mt-4 md:mt-0">
+              <a href="#apply" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition btn-primary">
+                Apply Now
+              </a>
+            </div>
+          </div>
+          
+          <p class="text-gray-600 mb-4">
+            Help grow and engage our developer community. You'll create content, organize events, and ensure our users have the best possible experience.
+          </p>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h4 class="font-semibold text-gray-800 mb-2">What You'll Do:</h4>
+              <ul class="text-gray-600 list-disc pl-5 space-y-1">
+                <li>Create tutorials, documentation, and blog content</li>
+                <li>Engage with our community on Discord and forums</li>
+                <li>Organize virtual events and hackathons</li>
+                <li>Gather and synthesize user feedback</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h4 class="font-semibold text-gray-800 mb-2">We're Looking For:</h4>
+              <ul class="text-gray-600 list-disc pl-5 space-y-1">
+                <li>Excellent communication and writing skills</li>
+                <li>Experience with community management</li>
+                <li>Technical background or strong interest in AI</li>
+                <li>Creative approach to engagement and outreach</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="text-center mt-12">
+        <p class="text-gray-600 mb-4">Don't see a perfect match but still interested in joining us?</p>
+        <a href="contact.html" class="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition btn-primary">
+          Get In Touch
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Application Process -->
+  <section class="py-16 bg-white">
+    <div class="max-w-4xl mx-auto px-6">
+      <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">Application Process</h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="text-center">
+          <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="text-blue-600 font-bold">1</span>
+          </div>
+          <h3 class="font-semibold text-gray-800 mb-2">Apply</h3>
+          <p class="text-sm text-gray-600">Submit your application with your resume and any relevant projects</p>
+        </div>
+        
+        <div class="text-center">
+          <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="text-green-600 font-bold">2</span>
+          </div>
+          <h3 class="font-semibold text-gray-800 mb-2">Initial Chat</h3>
+          <p class="text-sm text-gray-600">We'll have an informal conversation to learn about your interests and experience</p>
+        </div>
+        
+        <div class="text-center">
+          <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="text-purple-600 font-bold">3</span>
+          </div>
+          <h3 class="font-semibold text-gray-800 mb-2">Technical Discussion</h3>
+          <p class="text-sm text-gray-600">We'll discuss technical concepts relevant to the role</p>
+        </div>
+        
+        <div class="text-center">
+          <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="text-yellow-600 font-bold">4</span>
+          </div>
+          <h3 class="font-semibold text-gray-800 mb-2">Offer</h3>
+          <p class="text-sm text-gray-600">If it's a good fit, we'll extend an offer to join our team</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Apply Section -->
+  <section id="apply" class="py-16 bg-gray-50">
+    <div class="max-w-2xl mx-auto px-6">
+      <h2 class="text-3xl font-bold text-center text-gray-800 mb-8">Apply Now</h2>
+      <div class="bg-white rounded-xl shadow p-8">
+        <form class="space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-gray-700 mb-2" for="firstName">First Name</label>
+              <input type="text" id="firstName" class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            </div>
+            
+            <div>
+              <label class="block text-gray-700 mb-2" for="lastName">Last Name</label>
+              <input type="text" id="lastName" class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            </div>
+          </div>
+          
+          <div>
+            <label class="block text-gray-700 mb-2" for="email">Email</label>
+            <input type="email" id="email" class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+          </div>
+          
+          <div>
+            <label class="block text-gray-700 mb-2" for="position">Position</label>
+            <select id="position" class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+              <option value="">Select a position</option>
+              <option value="ai-research-intern">AI Research Intern</option>
+              <option value="software-engineering-intern">Software Engineering Intern</option>
+              <option value="community-outreach-lead">Community & Outreach Lead</option>
+            </select>
+          </div>
+          
+          <div>
+            <label class="block text-gray-700 mb-2" for="resume">Resume/CV</label>
+            <input type="file" id="resume" class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" accept=".pdf,.doc,.docx" required>
+          </div>
+          
+          <div>
+            <label class="block text-gray-700 mb-2" for="portfolio">Portfolio or GitHub URL (Optional)</label>
+            <input type="url" id="portfolio" class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          
+          <div>
+            <label class="block text-gray-700 mb-2" for="message">Why are you interested in joining TAI Research?</label>
+            <textarea id="message" rows="4" class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required></textarea>
+          </div>
+          
+          <button type="submit" class="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition btn-primary">
+            Submit Application
+          </button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-gray-800 text-white py-12">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div>
+          <div class="flex items-center space-x-3 mb-4">
+            <img src="icon.jpg" class="w-10 h-10 rounded-full" alt="TAI logo" />
+            <h3 class="text-xl font-semibold">TAI Developer Platform</h3>
+          </div>
+          <p class="text-gray-400">Building the Future of Creation with AI.</p>
+        </div>
+        <div>
+          <h4 class="text-lg font-semibold mb-4">Platform</h4>
+          <ul class="space-y-2 text-gray-400">
+            <li><a href="dashboard.html" class="hover:text-white transition">Dashboard</a></li>
+            <li><a href="playground.html" class="hover:text-white transition">Playground</a></li>
+            <li><a href="docs.html" class="hover:text-white transition">Documentation</a></li>
+            <li><a href="pricing.html" class="hover:text-white transition">Pricing</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-lg font-semibold mb-4">Resources</h4>
+          <ul class="space-y-2 text-gray-400">
+            <li><a href="blog.html" class="hover:text-white transition">Blog</a></li>
+            <li><a href="community.html" class="hover:text-white transition">Community</a></li>
+            <li><a href="support.html" class="hover:text-white transition">Support</a></li>
+            <li><a href="status.html" class="hover:text-white transition">Status</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-lg font-semibold mb-4">Company</h4>
+          <ul class="space-y-2 text-gray-400">
+            <li><a href="about.html" class="hover:text-white transition">About</a></li>
+            <li><a href="careers.html" class="hover:text-white transition">Careers</a></li>
+            <li><a href="contact.html" class="hover:text-white transition">Contact</a></li>
+            <li><a href="privacy.html" class="hover:text-white transition">Privacy Policy</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+        <p>© 2025 TAI Research. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
