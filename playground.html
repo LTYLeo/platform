@@ -5,144 +5,217 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TAI Developer Platform – Build with Intelligence</title>
   <link rel="icon" href="icon.jpg" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/framer-motion@10.16.3/dist/framer-motion.umd.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Locale must be decided before first paint so Chinese users never see an English flash -->
+  <script>
+    (function () {
+      try {
+        var lang = 'en';
+        var fromUrl = /[?&]lang=(en|zh)(?![a-z])/i.exec(location.search);
+        var saved = localStorage.getItem('tai-lang');
+        if (fromUrl) {
+          lang = fromUrl[1].toLowerCase();
+        } else if (saved === 'zh' || saved === 'en') {
+          lang = saved;
+        } else {
+          var list = (navigator.languages && navigator.languages.length)
+            ? navigator.languages : [navigator.language || 'en'];
+          for (var i = 0; i < list.length; i++) {
+            var l = String(list[i]).toLowerCase();
+            if (l.indexOf('zh') === 0) { lang = 'zh'; break; }
+            if (l.indexOf('en') === 0) { lang = 'en'; break; }
+          }
+        }
+        document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh-CN' : 'en');
+        if (lang !== 'en') {
+          document.documentElement.className += ' i18n-pending';
+          setTimeout(function () {
+            document.documentElement.classList.remove('i18n-pending');
+          }, 2000);
+        }
+      } catch (e) { /* private mode / no storage */ }
+    })();
+  </script>
+  <link rel="stylesheet" href="theme.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <style>
-    .gradient-bg {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    /* page-specific: composer sizing + range scale labels */
+    .composer-row textarea { flex: 1; min-height: 62px; }
+    .composer-row .btn { flex: 0 0 auto; }
+    .scale-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--muted);
     }
-    .card-hover {
-      transition: all 0.3s ease;
-    }
-    .card-hover:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-    }
-    .sidebar {
-      transition: all 0.3s ease;
-    }
-    .chat-bubble-user {
-      background-color: #3b82f6;
-      color: white;
-      border-radius: 18px 18px 4px 18px;
-      padding: 12px 16px;
-      margin: 8px 0;
-      max-width: 80%;
-      align-self: flex-end;
-    }
-    .chat-bubble-ai {
-      background-color: #f1f5f9;
-      color: #334155;
-      border-radius: 18px 18px 18px 4px;
-      padding: 12px 16px;
-      margin: 8px 0;
-      max-width: 80%;
-      align-self: flex-start;
-    }
-    .code-block {
-      background-color: #1e293b;
-      color: #e2e8f0;
-      border-radius: 8px;
-      padding: 16px;
-      overflow-x: auto;
-      font-family: 'Courier New', monospace;
-      margin: 12px 0;
-    }
+    .link-btn i { margin-right: 4px; }
   </style>
 </head>
 <body>
-  <!-- 导航栏 -->
-  
-  <!-- Playground内容 -->
-  <div class="flex h-screen pt-16">
-    <!-- 侧边栏 -->
-    <div class="w-64 bg-white border-r border-gray-200 p-4 overflow-y-auto">
-      <h3 class="font-semibold text-gray-700 mb-4">Configuration</h3>
-      
-      <div class="mb-6">
-        <label class="block text-sm font-medium text-gray-700 mb-2">Model</label>
-        <select class="w-full border border-gray-300 rounded-lg p-2">
-          <option>GTC-2 Turbo</option>
-          <option>Giggle (Teens)</option>
-          <option>Bro (Teens)</option>
-          <option>Sweetie (Teens)</option>
-        </select>
-      </div>
-      
-      <div class="mb-6">
-        <label class="block text-sm font-medium text-gray-700 mb-2">Temperature</label>
-        <input type="range" min="0" max="1" step="0.1" value="0.7" class="w-full">
-        <div class="flex justify-between text-xs text-gray-500 mt-1">
-          <span>0</span>
-          <span>0.7</span>
-          <span>1</span>
-        </div>
-      </div>
-      
-      <div class="mb-6">
-        <label class="block text-sm font-medium text-gray-700 mb-2">Max Tokens</label>
-        <input type="number" value="256" class="w-full border border-gray-300 rounded-lg p-2">
-      </div>
-      
-      <div class="mb-6">
-        <label class="block text-sm font-medium text-gray-700 mb-2">System Prompt</label>
-        <textarea class="w-full border border-gray-300 rounded-lg p-2 h-32" placeholder="You are a helpful assistant..."></textarea>
-      </div>
-      
-      <button class="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Save Configuration</button>
-    </div>
-    
-    <!-- 主聊天区域 -->
-    <div class="flex-1 flex flex-col">
-      <!-- 聊天历史 -->
-      <div class="flex-1 p-6 overflow-y-auto bg-gray-50">
-        <div class="max-w-3xl mx-auto">
-          <div class="flex flex-col">
-            <!-- 用户消息 -->
-            <div class="chat-bubble-user">
-              Hello, can you help me write a Python function to calculate factorial?
+  <!-- Navbar -->
+  <header class="container site-header">
+    <a class="logo" href="index.html">
+      <span class="mark"><img src="icon.jpg" alt="TAI Research Logo" /></span>
+      <span>
+        <span class="logo-name">TAI Developer Platform</span>
+        <small>Build with Intelligence</small>
+      </span>
+    </a>
+    <nav class="site-nav">
+      <a href="index.html">Home</a>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="playground.html" class="active">Playground</a>
+      <a href="docs.html">Docs</a>
+      <a href="pricing.html">Pricing</a>
+      <a href="#" id="loginBtn" class="btn sm">Login</a>
+    </nav>
+  </header>
+
+  <main class="container-wide">
+    <!-- Playground workspace -->
+    <section class="section-plain">
+      <div class="workspace">
+
+        <!-- Configuration -->
+        <aside class="panel">
+          <div class="panel-title">Configuration</div>
+
+          <div class="field">
+            <label for="modelSelect">Model</label>
+            <select id="modelSelect">
+              <option value="gtc-2.5-mini">GTC-2.5 mini</option>
+              <option value="tfmf">TFMF</option>
+              <option value="giggle" disabled>Giggle — in training</option>
+              <option value="bro" disabled>Bro — in training</option>
+              <option value="sweetie" disabled>Sweetie — in training</option>
+            </select>
+            <p class="muted tiny" style="margin-top:8px;">
+              GTC-2.5 mini and TFMF are live. The companion models unlock once LoRA training finishes.
+            </p>
+          </div>
+
+          <div class="field">
+            <label for="temperature">Temperature</label>
+            <input id="temperature" type="range" min="0" max="1" step="0.1" value="0.7" />
+            <div class="scale-labels">
+              <span>0</span>
+              <span>0.7</span>
+              <span>1</span>
             </div>
-            
-            <!-- AI回复 -->
-            <div class="chat-bubble-ai">
-              <p>Sure! Here's a Python function to calculate factorial:</p>
-              <div class="code-block">
-                <pre>def factorial(n):
+          </div>
+
+          <div class="field">
+            <label for="maxTokens">Max Tokens</label>
+            <input id="maxTokens" type="number" value="256" />
+          </div>
+
+          <div class="field">
+            <label for="systemPrompt">System Prompt</label>
+            <textarea id="systemPrompt" style="min-height:128px;" placeholder="You are a helpful assistant..."></textarea>
+          </div>
+
+          <button class="btn block">Save Configuration</button>
+        </aside>
+
+        <!-- Chat -->
+        <div class="stack">
+          <div class="panel">
+            <div class="chat-scroll">
+              <!-- User message -->
+              <div class="chat-bubble-user">
+                Hello, can you help me write a Python function to calculate factorial?
+              </div>
+
+              <!-- AI reply -->
+              <div class="chat-bubble-ai">
+                <p>Sure! Here's a Python function to calculate factorial:</p>
+                <div class="code-block">
+<pre>def factorial(n):
     if n == 0:
         return 1
     else:
         return n * factorial(n-1)</pre>
+                </div>
+                <p>This function uses recursion to calculate the factorial of a number.</p>
               </div>
-              <p>This function uses recursion to calculate the factorial of a number.</p>
             </div>
-            
-            <!-- 更多消息 -->
+          </div>
+
+          <!-- Composer -->
+          <div class="composer">
+            <div class="composer-row">
+              <textarea id="chatInput" rows="2" placeholder="Type your message here..."></textarea>
+              <button class="btn" aria-label="Send message"><i class="fas fa-paper-plane"></i></button>
+            </div>
+            <div class="composer-meta">
+              <div>
+                <button class="link-btn"><i class="fas fa-sliders-h"></i> Parameters</button>
+                <button class="link-btn"><i class="fas fa-trash-alt"></i> Clear</button>
+              </div>
+              <div>
+                <span>0 tokens</span>
+              </div>
+            </div>
           </div>
         </div>
+
       </div>
-      
-      <!-- 输入区域 -->
-      <div class="border-t border-gray-200 p-4 bg-white">
-        <div class="max-w-3xl mx-auto">
-          <div class="flex">
-            <textarea class="flex-1 border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Type your message here..." rows="2"></textarea>
-            <button class="ml-3 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition self-end">
-              <i class="fas fa-paper-plane"></i>
-            </button>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container-wide">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-brand">
+            <img src="icon.jpg" alt="TAI Research Logo" />
+            <span>TAI Developer Platform</span>
           </div>
-          <div class="flex justify-between mt-2 text-sm text-gray-500">
-            <div>
-              <button class="hover:text-gray-700 mr-3"><i class="fas fa-sliders-h mr-1"></i> Parameters</button>
-              <button class="hover:text-gray-700"><i class="fas fa-trash-alt mr-1"></i> Clear</button>
-            </div>
-            <div>
-              <span>0 tokens</span>
-            </div>
-          </div>
+          <p class="muted">Building the Future of Creation with AI.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Platform</h4>
+          <ul>
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="playground.html">Playground</a></li>
+            <li><a href="docs.html">Documentation</a></li>
+            <li><a href="pricing.html">Pricing</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Resources</h4>
+          <ul>
+            <li><a href="community.html">Community</a></li>
+            <li><a href="support.html">Support</a></li>
+            <li><a href="status.html">Status</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="about.html">About</a></li>
+            <li><a href="careers.html">Careers</a></li>
+            <li><a href="contact.html">Contact</a></li>
+            <li><a href="privacy.html">Privacy Policy</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div>© TAI Research. All rights reserved.</div>
+        <div class="footer-social">
+          <a href="https://github.com/LTYLeo" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://huggingface.co/TAI-Research" target="_blank" rel="noopener">Hugging Face</a>
+          <a href="https://space.bilibili.com/88158150" target="_blank" rel="noopener">Bilibili</a>
         </div>
       </div>
     </div>
-  </div>
+  </footer>
+  <!-- i18n: English lives in the markup, locales/zh.js supplies the Chinese strings -->
+  <script src="config.js"></script>
+  <script src="locales/zh.js"></script>
+  <script src="i18n.js"></script>
+  <script src="auth.js"></script>
 </body>
 </html>

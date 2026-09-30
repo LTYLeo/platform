@@ -5,361 +5,322 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Support - TAI Developer Platform</title>
   <link rel="icon" href="icon.jpg" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Locale must be decided before first paint so Chinese users never see an English flash -->
+  <script>
+    (function () {
+      try {
+        var lang = 'en';
+        var fromUrl = /[?&]lang=(en|zh)(?![a-z])/i.exec(location.search);
+        var saved = localStorage.getItem('tai-lang');
+        if (fromUrl) {
+          lang = fromUrl[1].toLowerCase();
+        } else if (saved === 'zh' || saved === 'en') {
+          lang = saved;
+        } else {
+          var list = (navigator.languages && navigator.languages.length)
+            ? navigator.languages : [navigator.language || 'en'];
+          for (var i = 0; i < list.length; i++) {
+            var l = String(list[i]).toLowerCase();
+            if (l.indexOf('zh') === 0) { lang = 'zh'; break; }
+            if (l.indexOf('en') === 0) { lang = 'en'; break; }
+          }
+        }
+        document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh-CN' : 'en');
+        if (lang !== 'en') {
+          document.documentElement.className += ' i18n-pending';
+          setTimeout(function () {
+            document.documentElement.classList.remove('i18n-pending');
+          }, 2000);
+        }
+      } catch (e) { /* private mode / no storage */ }
+    })();
+  </script>
+  <link rel="stylesheet" href="theme.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <style>
-    .gradient-bg {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    /* Hero: the sub-heading keeps its natural width but sits centred under the title */
+    .page-hero .lead { margin: 0 auto 26px; }
+
+    /* Article cards: the description grows so "Read Article" sits at the same height */
+    .article-card .card-desc { flex: 1; }
+    .article-card .card-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      align-self: flex-start;
     }
-    .card-hover {
-      transition: all 0.3s ease;
-    }
-    .card-hover:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-    }
-    .btn-primary {
-      transition: all 0.3s ease;
-    }
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+
+    /* Icon spacing inside the CTA buttons (the search button holds an icon only) */
+    .btn i { margin-right: 8px; }
+    .search-bar .btn i { margin-right: 0; }
+
+    /* Button rows that need to sit in the middle of a plain section */
+    .btn-row.center { justify-content: center; }
+
+    /* Support tiers: notes stay at the foot of each card; the second note is muted */
+    .tier-card .note { margin-top: auto; }
+    .note-muted {
+      background: rgba(148, 163, 184, 0.1);
+      border-color: rgba(148, 163, 184, 0.3);
+      color: #c2cbdc;
     }
   </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans">
+<body>
   <!-- Navbar -->
-  <header class="flex justify-between items-center px-10 py-5 bg-white shadow-md sticky top-0 z-50">
-    <div class="flex items-center space-x-3">
-      <img src="icon.jpg" class="w-10 h-10 rounded-full" alt="TAI logo" />
-      <h1 class="text-2xl font-semibold text-gray-800">TAI Developer Platform</h1>
-    </div>
-    <nav class="space-x-6 flex items-center">
-      <a href="index.html" class="hover:text-blue-600">Home</a>
-      <a href="dashboard.html" class="hover:text-blue-600">Dashboard</a>
-      <a href="playground.html" class="hover:text-blue-600">Playground</a>
-      <a href="docs.html" class="hover:text-blue-600">Docs</a>
-      <a href="pricing.html" class="hover:text-blue-600">Pricing</a>
-      <a href="#" id="loginBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition btn-primary">Login</a>
+  <header class="container site-header">
+    <a class="logo" href="index.html">
+      <span class="mark"><img src="icon.jpg" alt="TAI Research Logo" /></span>
+      <span>
+        <span class="logo-name">TAI Developer Platform</span>
+        <small>Build with Intelligence</small>
+      </span>
+    </a>
+    <nav class="site-nav">
+      <a href="index.html">Home</a>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="playground.html">Playground</a>
+      <a href="docs.html">Docs</a>
+      <a href="pricing.html">Pricing</a>
+      <a href="#" id="loginBtn" class="btn sm">Login</a>
     </nav>
   </header>
 
-  <!-- Support Hero Section -->
-  <section class="py-16 gradient-bg text-white">
-    <div class="max-w-4xl mx-auto text-center px-6">
-      <h1 class="text-4xl font-bold mb-4">How can we help you?</h1>
-      <p class="text-xl opacity-90 mb-8">Find answers, get help, and contact our support team</p>
-      <div class="max-w-2xl mx-auto">
-        <div class="flex">
-          <input type="text" placeholder="Search for help..." class="flex-1 px-4 py-3 rounded-l-lg focus:outline-none text-gray-800">
-          <button class="px-6 py-3 bg-blue-600 text-white rounded-r-lg hover:bg-blue-700 transition">
-            <i class="fas fa-search"></i>
-          </button>
-        </div>
+  <main class="container">
+    <!-- Support hero -->
+    <section class="page-hero text-center">
+      <h1>How can we help you?</h1>
+      <p class="lead">Find answers, get help, and contact our support team</p>
+      <div class="search-bar">
+        <input type="text" placeholder="Search for help..." />
+        <button type="button" class="btn"><i class="fas fa-search"></i></button>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Help Categories -->
-  <section class="py-16">
-    <div class="max-w-6xl mx-auto px-6">
-      <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">Help Categories</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <!-- Help Categories -->
+    <section>
+      <div class="section-head">
+        <h2>Help Categories</h2>
+      </div>
+      <div class="grid grid-4 grid-flush">
         <!-- Getting Started -->
-        <a href="#" class="bg-white rounded-xl shadow p-6 text-center card-hover">
-          <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <i class="fas fa-rocket text-blue-600 text-2xl"></i>
-          </div>
-          <h3 class="text-xl font-bold text-gray-800 mb-2">Getting Started</h3>
-          <p class="text-gray-600">New to TAI? Learn the basics and set up your first project.</p>
+        <a href="#" class="card card-clickable text-center">
+          <div class="icon-chip center"><i class="fas fa-rocket"></i></div>
+          <span class="card-title">Getting Started</span>
+          <span class="card-desc">New to TAI? Learn the basics and set up your first project.</span>
         </a>
 
         <!-- API Documentation -->
-        <a href="docs.html" class="bg-white rounded-xl shadow p-6 text-center card-hover">
-          <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <i class="fas fa-code text-green-600 text-2xl"></i>
-          </div>
-          <h3 class="text-xl font-bold text-gray-800 mb-2">API Documentation</h3>
-          <p class="text-gray-600">Comprehensive guides and references for TAI's API.</p>
+        <a href="docs.html" class="card card-clickable text-center">
+          <div class="icon-chip green center"><i class="fas fa-code"></i></div>
+          <span class="card-title">API Documentation</span>
+          <span class="card-desc">Comprehensive guides and references for TAI's API.</span>
         </a>
 
         <!-- Billing & Accounts -->
-        <a href="#" class="bg-white rounded-xl shadow p-6 text-center card-hover">
-          <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <i class="fas fa-credit-card text-purple-600 text-2xl"></i>
-          </div>
-          <h3 class="text-xl font-bold text-gray-800 mb-2">Billing & Accounts</h3>
-          <p class="text-gray-600">Manage your account, billing, and pay-as-you-go credit.</p>
+        <a href="#" class="card card-clickable text-center">
+          <div class="icon-chip purple center"><i class="fas fa-credit-card"></i></div>
+          <span class="card-title">Billing &amp; Accounts</span>
+          <span class="card-desc">Manage your account, billing, and pay-as-you-go credit.</span>
         </a>
 
         <!-- Troubleshooting -->
-        <a href="#" class="bg-white rounded-xl shadow p-6 text-center card-hover">
-          <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <i class="fas fa-tools text-orange-600 text-2xl"></i>
-          </div>
-          <h3 class="text-xl font-bold text-gray-800 mb-2">Troubleshooting</h3>
-          <p class="text-gray-600">Find solutions to common issues and errors.</p>
+        <a href="#" class="card card-clickable text-center">
+          <div class="icon-chip amber center"><i class="fas fa-tools"></i></div>
+          <span class="card-title">Troubleshooting</span>
+          <span class="card-desc">Find solutions to common issues and errors.</span>
         </a>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Popular Articles -->
-  <section class="py-16 bg-gray-50">
-    <div class="max-w-6xl mx-auto px-6">
-      <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">Popular Help Articles</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <!-- Popular Help Articles -->
+    <section>
+      <div class="section-head">
+        <h2>Popular Help Articles</h2>
+      </div>
+      <div class="grid grid-2 grid-flush">
         <!-- Article 1 -->
-        <div class="bg-white rounded-xl shadow p-6 card-hover">
-          <h3 class="text-xl font-bold text-gray-800 mb-3">How to Generate Your First API Key</h3>
-          <p class="text-gray-600 mb-4">Step-by-step guide to creating and managing your TAI API keys for authentication.</p>
-          <a href="#" class="text-blue-600 font-medium hover:text-blue-800 inline-flex items-center">
-            Read Article
-            <i class="fas fa-chevron-right ml-2 text-sm"></i>
-          </a>
+        <div class="card article-card">
+          <h3>How to Generate Your First API Key</h3>
+          <p class="card-desc">Step-by-step guide to creating and managing your TAI API keys for authentication.</p>
+          <a href="#" class="card-link">Read Article <i class="fas fa-chevron-right"></i></a>
         </div>
 
         <!-- Article 2 -->
-        <div class="bg-white rounded-xl shadow p-6 card-hover">
-          <h3 class="text-xl font-bold text-gray-800 mb-3">Understanding Pay-As-You-Go Billing</h3>
-          <p class="text-gray-600 mb-4">Learn how our pay-as-you-go system works and how to add credit to your account.</p>
-          <a href="#" class="text-blue-600 font-medium hover:text-blue-800 inline-flex items-center">
-            Read Article
-            <i class="fas fa-chevron-right ml-2 text-sm"></i>
-          </a>
+        <div class="card article-card">
+          <h3>Understanding Pay-As-You-Go Billing</h3>
+          <p class="card-desc">Learn how our pay-as-you-go system works and how to add credit to your account.</p>
+          <a href="#" class="card-link">Read Article <i class="fas fa-chevron-right"></i></a>
         </div>
 
         <!-- Article 3 -->
-        <div class="bg-white rounded-xl shadow p-6 card-hover">
-          <h3 class="text-xl font-bold text-gray-800 mb-3">Common API Error Codes and Solutions</h3>
-          <p class="text-gray-600 mb-4">Reference guide for troubleshooting common TAI API error responses.</p>
-          <a href="#" class="text-blue-600 font-medium hover:text-blue-800 inline-flex items-center">
-            Read Article
-            <i class="fas fa-chevron-right ml-2 text-sm"></i>
-          </a>
+        <div class="card article-card">
+          <h3>Common API Error Codes and Solutions</h3>
+          <p class="card-desc">Reference guide for troubleshooting common TAI API error responses.</p>
+          <a href="#" class="card-link">Read Article <i class="fas fa-chevron-right"></i></a>
         </div>
 
         <!-- Article 4 -->
-        <div class="bg-white rounded-xl shadow p-6 card-hover">
-          <h3 class="text-xl font-bold text-gray-800 mb-3">Best Practices for API Integration</h3>
-          <p class="text-gray-600 mb-4">Tips and recommendations for building robust applications with TAI's API.</p>
-          <a href="#" class="text-blue-600 font-medium hover:text-blue-800 inline-flex items-center">
-            Read Article
-            <i class="fas fa-chevron-right ml-2 text-sm"></i>
-          </a>
+        <div class="card article-card">
+          <h3>Best Practices for API Integration</h3>
+          <p class="card-desc">Tips and recommendations for building robust applications with TAI's API.</p>
+          <a href="#" class="card-link">Read Article <i class="fas fa-chevron-right"></i></a>
         </div>
 
         <!-- Article 5 -->
-        <div class="bg-white rounded-xl shadow p-6 card-hover">
-          <h3 class="text-xl font-bold text-gray-800 mb-3">Token Usage and Cost Optimization</h3>
-          <p class="text-gray-600 mb-4">Learn how to optimize your token usage to control costs and improve efficiency.</p>
-          <a href="#" class="text-blue-600 font-medium hover:text-blue-800 inline-flex items-center">
-            Read Article
-            <i class="fas fa-chevron-right ml-2 text-sm"></i>
-          </a>
+        <div class="card article-card">
+          <h3>Token Usage and Cost Optimization</h3>
+          <p class="card-desc">Learn how to optimize your token usage to control costs and improve efficiency.</p>
+          <a href="#" class="card-link">Read Article <i class="fas fa-chevron-right"></i></a>
         </div>
 
         <!-- Article 6 -->
-        <div class="bg-white rounded-xl shadow p-6 card-hover">
-          <h3 class="text-xl font-bold text-gray-800 mb-3">Rate Limits and How to Handle Them</h3>
-          <p class="text-gray-600 mb-4">Understand TAI's rate limiting policies and implement proper backoff strategies.</p>
-          <a href="#" class="text-blue-600 font-medium hover:text-blue-800 inline-flex items-center">
-            Read Article
-            <i class="fas fa-chevron-right ml-2 text-sm"></i>
-          </a>
+        <div class="card article-card">
+          <h3>Rate Limits and How to Handle Them</h3>
+          <p class="card-desc">Understand TAI's rate limiting policies and implement proper backoff strategies.</p>
+          <a href="#" class="card-link">Read Article <i class="fas fa-chevron-right"></i></a>
         </div>
       </div>
 
-      <div class="text-center mt-12">
-        <a href="#" class="inline-block px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition btn-primary">
-          View All Articles
-        </a>
+      <div class="text-center">
+        <a href="#" class="view-all-link">View All Articles</a>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Contact Support -->
-  <section class="py-16 bg-white">
-    <div class="max-w-4xl mx-auto px-6">
-      <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-8 text-white text-center">
-        <h2 class="text-3xl font-bold mb-4">Still need help?</h2>
-        <p class="text-xl opacity-90 mb-8">Our support team is here to assist you with any questions or issues.</p>
-        <div class="flex flex-col sm:flex-row gap-4 justify-center">
-          <a href="#" class="px-6 py-3 bg-white text-blue-600 rounded-lg font-medium hover:bg-gray-100 transition btn-primary">
-            <i class="fas fa-envelope mr-2"></i>
-            Contact Support
-          </a>
-          <a href="community.html" class="px-6 py-3 bg-transparent border border-white text-white rounded-lg font-medium hover:bg-white hover:bg-opacity-10 transition">
-            <i class="fas fa-users mr-2"></i>
-            Ask Community
-          </a>
+    <!-- Still need help? -->
+    <section>
+      <div class="cta-band">
+        <h2>Still need help?</h2>
+        <p>Our support team is here to assist you with any questions or issues.</p>
+        <div class="btn-row">
+          <a href="#" class="btn lg"><i class="fas fa-envelope"></i>Contact Support</a>
+          <a href="community.html" class="btn outline lg"><i class="fas fa-users"></i>Ask Community</a>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Support Tiers -->
-  <section class="py-16 bg-gray-50">
-    <div class="max-w-6xl mx-auto px-6">
-      <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">Support Tiers</h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <!-- Support Tiers -->
+    <section>
+      <div class="section-head">
+        <h2>Support Tiers</h2>
+      </div>
+      <div class="grid grid-3 grid-flush">
         <!-- Community Support -->
-        <div class="bg-white rounded-xl shadow p-8 text-center">
-          <h3 class="text-2xl font-bold text-gray-800 mb-4">Community Support</h3>
-          <p class="text-gray-600 mb-6">Available to all users</p>
-          <ul class="space-y-4 mb-8 text-left">
-            <li class="flex items-center">
-              <i class="fas fa-check text-green-500 mr-3"></i>
-              <span>Access to documentation</span>
-            </li>
-            <li class="flex items-center">
-              <i class="fas fa-check text-green-500 mr-3"></i>
-              <span>Community forums</span>
-            </li>
-            <li class="flex items-center">
-              <i class="fas fa-check text-green-500 mr-3"></i>
-              <span>Help articles</span>
-            </li>
-            <li class="flex items-center text-gray-400">
-              <i class="fas fa-times mr-3"></i>
-              <span>Email support</span>
-            </li>
-            <li class="flex items-center text-gray-400">
-              <i class="fas fa-times mr-3"></i>
-              <span>Priority response</span>
-            </li>
-          </ul>
+        <div class="card tier-card">
+          <h3>Community Support</h3>
+          <p class="muted small">Available to all users</p>
+          <div class="tier-body">
+            <ul class="feature-list">
+              <li><i class="fas fa-check ok"></i><span>Access to documentation</span></li>
+              <li><i class="fas fa-check ok"></i><span>Community forums</span></li>
+              <li><i class="fas fa-check ok"></i><span>Help articles</span></li>
+              <li class="off"><i class="fas fa-times no"></i><span>Email support</span></li>
+              <li class="off"><i class="fas fa-times no"></i><span>Priority response</span></li>
+            </ul>
+          </div>
         </div>
 
-        <!-- Standard Support -->
-        <div class="bg-white rounded-xl shadow p-8 text-center border-2 border-blue-500 relative">
-          <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
-            <span class="bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-medium">ACTIVE ACCOUNT</span>
+        <!-- Standard Support (featured) -->
+        <div class="card tier-card featured">
+          <span class="tier-flag">ACTIVE ACCOUNT</span>
+          <h3>Standard Support</h3>
+          <p class="muted small">Available to all users with account credit</p>
+          <div class="tier-body">
+            <ul class="feature-list">
+              <li><i class="fas fa-check ok"></i><span>All Community features</span></li>
+              <li><i class="fas fa-check ok"></i><span>Email support</span></li>
+              <li><i class="fas fa-check ok"></i><span>48-hour response time</span></li>
+              <li><i class="fas fa-check ok"></i><span>Technical guidance</span></li>
+              <li class="off"><i class="fas fa-times no"></i><span>24/7 phone support</span></li>
+            </ul>
           </div>
-          <h3 class="text-2xl font-bold text-gray-800 mb-4">Standard Support</h3>
-          <p class="text-gray-600 mb-6">Available to all users with account credit</p>
-          <ul class="space-y-4 mb-8 text-left">
-            <li class="flex items-center">
-              <i class="fas fa-check text-green-500 mr-3"></i>
-              <span>All Community features</span>
-            </li>
-            <li class="flex items-center">
-              <i class="fas fa-check text-green-500 mr-3"></i>
-              <span>Email support</span>
-            </li>
-            <li class="flex items-center">
-              <i class="fas fa-check text-green-500 mr-3"></i>
-              <span>48-hour response time</span>
-            </li>
-            <li class="flex items-center">
-              <i class="fas fa-check text-green-500 mr-3"></i>
-              <span>Technical guidance</span>
-            </li>
-            <li class="flex items-center text-gray-400">
-              <i class="fas fa-times mr-3"></i>
-              <span>24/7 phone support</span>
-            </li>
-          </ul>
-          <div class="mt-4 p-3 bg-blue-50 rounded-lg">
-            <p class="text-sm text-blue-700">Simply add credit to your account to unlock Standard Support</p>
-          </div>
+          <p class="note">Simply add credit to your account to unlock Standard Support</p>
         </div>
 
         <!-- Premium Support -->
-        <div class="bg-white rounded-xl shadow p-8 text-center">
-          <h3 class="text-2xl font-bold text-gray-800 mb-4">Premium Support</h3>
-          <p class="text-gray-600 mb-6">For high-volume users</p>
-          <ul class="space-y-4 mb-8 text-left">
-            <li class="flex items-center">
-              <i class="fas fa-check text-green-500 mr-3"></i>
-              <span>All Standard features</span>
-            </li>
-            <li class="flex items-center">
-              <i class="fas fa-check text-green-500 mr-3"></i>
-              <span>24-hour response time</span>
-            </li>
-            <li class="flex items-center">
-              <i class="fas fa-check text-green-500 mr-3"></i>
-              <span>Priority issue resolution</span>
-            </li>
-            <li class="flex items-center">
-              <i class="fas fa-check text-green-500 mr-3"></i>
-              <span>Technical consultations</span>
-            </li>
-            <li class="flex items-center">
-              <i class="fas fa-check text-green-500 mr-3"></i>
-              <span>Usage optimization advice</span>
-            </li>
-          </ul>
-          <div class="mt-4 p-3 bg-gray-100 rounded-lg">
-            <p class="text-sm text-gray-700">Contact us to discuss Premium Support options</p>
+        <div class="card tier-card">
+          <h3>Premium Support</h3>
+          <p class="muted small">For high-volume users</p>
+          <div class="tier-body">
+            <ul class="feature-list">
+              <li><i class="fas fa-check ok"></i><span>All Standard features</span></li>
+              <li><i class="fas fa-check ok"></i><span>24-hour response time</span></li>
+              <li><i class="fas fa-check ok"></i><span>Priority issue resolution</span></li>
+              <li><i class="fas fa-check ok"></i><span>Technical consultations</span></li>
+              <li><i class="fas fa-check ok"></i><span>Usage optimization advice</span></li>
+            </ul>
           </div>
+          <p class="note note-muted">Contact us to discuss Premium Support options</p>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Student Team Section -->
-  <section class="py-16 bg-gradient-to-r from-blue-50 to-indigo-50">
-    <div class="max-w-4xl mx-auto px-6 text-center">
-      <h2 class="text-3xl font-bold text-gray-800 mb-6">Built by Students, For Developers</h2>
-      <p class="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+    <!-- Student Team Section -->
+    <section class="section-plain text-center">
+      <h2>Built by Students, For Developers</h2>
+      <p class="lead" style="margin:0 auto 24px;">
         We're a team of high school students passionate about AI. Despite limited resources, we've created TAI to make powerful AI models accessible to everyone. Your support helps us continue improving and expanding our services.
       </p>
-      <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="about.html" class="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition btn-primary">
-          Learn Our Story
-        </a>
-        <a href="contact.html" class="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition">
-          Contact Us
-        </a>
+      <div class="btn-row center">
+        <a href="about.html" class="btn">Learn Our Story</a>
+        <a href="contact.html" class="btn outline">Contact Us</a>
       </div>
-    </div>
-  </section>
+    </section>
+  </main>
 
   <!-- Footer -->
-  <footer class="bg-gray-800 text-white py-12">
-    <div class="max-w-6xl mx-auto px-6">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+  <footer class="site-footer">
+    <div class="container-wide">
+      <div class="footer-grid">
         <div>
-          <div class="flex items-center space-x-3 mb-4">
-            <img src="icon.jpg" class="w-10 h-10 rounded-full" alt="TAI logo" />
-            <h3 class="text-xl font-semibold">TAI Developer Platform</h3>
+          <div class="footer-brand">
+            <img src="icon.jpg" alt="TAI Research Logo" />
+            <span>TAI Developer Platform</span>
           </div>
-          <p class="text-gray-400">Building the Future of Creation with AI.</p>
+          <p class="muted">Building the Future of Creation with AI.</p>
         </div>
-        <div>
-          <h4 class="text-lg font-semibold mb-4">Platform</h4>
-          <ul class="space-y-2 text-gray-400">
-            <li><a href="dashboard.html" class="hover:text-white transition">Dashboard</a></li>
-            <li><a href="playground.html" class="hover:text-white transition">Playground</a></li>
-            <li><a href="docs.html" class="hover:text-white transition">Documentation</a></li>
-            <li><a href="pricing.html" class="hover:text-white transition">Pricing</a></li>
+        <div class="footer-col">
+          <h4>Platform</h4>
+          <ul>
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="playground.html">Playground</a></li>
+            <li><a href="docs.html">Documentation</a></li>
+            <li><a href="pricing.html">Pricing</a></li>
           </ul>
         </div>
-        <div>
-          <h4 class="text-lg font-semibold mb-4">Resources</h4>
-          <ul class="space-y-2 text-gray-400">
-            <li><a href="blog.html" class="hover:text-white transition">Blog</a></li>
-            <li><a href="community.html" class="hover:text-white transition">Community</a></li>
-            <li><a href="support.html" class="hover:text-white transition">Support</a></li>
-            <li><a href="status.html" class="hover:text-white transition">Status</a></li>
+        <div class="footer-col">
+          <h4>Resources</h4>
+          <ul>
+            <li><a href="community.html">Community</a></li>
+            <li><a href="support.html">Support</a></li>
+            <li><a href="status.html">Status</a></li>
           </ul>
         </div>
-        <div>
-          <h4 class="text-lg font-semibold mb-4">Company</h4>
-          <ul class="space-y-2 text-gray-400">
-            <li><a href="about.html" class="hover:text-white transition">About</a></li>
-            <li><a href="careers.html" class="hover:text-white transition">Careers</a></li>
-            <li><a href="contact.html" class="hover:text-white transition">Contact</a></li>
-            <li><a href="privacy.html" class="hover:text-white transition">Privacy Policy</a></li>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="about.html">About</a></li>
+            <li><a href="careers.html">Careers</a></li>
+            <li><a href="contact.html">Contact</a></li>
+            <li><a href="privacy.html">Privacy Policy</a></li>
           </ul>
         </div>
       </div>
-      <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
-        <p>© 2025 TAI Research. All rights reserved.</p>
+      <div class="footer-bottom">
+        <div>© TAI Research. All rights reserved.</div>
+        <div class="footer-social">
+          <a href="https://github.com/LTYLeo" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://huggingface.co/TAI-Research" target="_blank" rel="noopener">Hugging Face</a>
+          <a href="https://space.bilibili.com/88158150" target="_blank" rel="noopener">Bilibili</a>
+        </div>
       </div>
     </div>
   </footer>
+  <!-- i18n: English lives in the markup, locales/zh.js supplies the Chinese strings -->
+  <script src="config.js"></script>
+  <script src="locales/zh.js"></script>
+  <script src="i18n.js"></script>
+  <script src="auth.js"></script>
 </body>
 </html>

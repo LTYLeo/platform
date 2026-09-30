@@ -5,113 +5,126 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Contact - TAI Research</title>
   <link rel="icon" href="icon.jpg" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Locale must be decided before first paint so Chinese users never see an English flash -->
+  <script>
+    (function () {
+      try {
+        var lang = 'en';
+        var fromUrl = /[?&]lang=(en|zh)(?![a-z])/i.exec(location.search);
+        var saved = localStorage.getItem('tai-lang');
+        if (fromUrl) {
+          lang = fromUrl[1].toLowerCase();
+        } else if (saved === 'zh' || saved === 'en') {
+          lang = saved;
+        } else {
+          var list = (navigator.languages && navigator.languages.length)
+            ? navigator.languages : [navigator.language || 'en'];
+          for (var i = 0; i < list.length; i++) {
+            var l = String(list[i]).toLowerCase();
+            if (l.indexOf('zh') === 0) { lang = 'zh'; break; }
+            if (l.indexOf('en') === 0) { lang = 'en'; break; }
+          }
+        }
+        document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh-CN' : 'en');
+        if (lang !== 'en') {
+          document.documentElement.className += ' i18n-pending';
+          setTimeout(function () {
+            document.documentElement.classList.remove('i18n-pending');
+          }, 2000);
+        }
+      } catch (e) { /* private mode / no storage */ }
+    })();
+  </script>
+  <link rel="stylesheet" href="theme.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <style>
-    .gradient-bg {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-    .card-hover {
-      transition: all 0.3s ease;
-    }
-    .card-hover:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-    }
-    .btn-primary {
-      transition: all 0.3s ease;
-    }
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-    }
+    /* Fields placed inside a .form-grid are spaced by the grid gap */
+    .form-grid .field { margin-bottom: 0; }
   </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans">
+<body>
   <!-- Navbar -->
-  <header class="flex justify-between items-center px-10 py-5 bg-white shadow-md sticky top-0 z-50">
-    <div class="flex items-center space-x-3">
-      <img src="icon.jpg" class="w-10 h-10 rounded-full" alt="TAI logo" />
-      <h1 class="text-2xl font-semibold text-gray-800">TAI Developer Platform</h1>
-    </div>
-    <nav class="space-x-6 flex items-center">
-      <a href="index.html" class="hover:text-blue-600">Home</a>
-      <a href="dashboard.html" class="hover:text-blue-600">Dashboard</a>
-      <a href="playground.html" class="hover:text-blue-600">Playground</a>
-      <a href="docs.html" class="hover:text-blue-600">Docs</a>
-      <a href="pricing.html" class="hover:text-blue-600">Pricing</a>
-      <a href="#" id="loginBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition btn-primary">Login</a>
+  <header class="container site-header">
+    <a class="logo" href="index.html">
+      <span class="mark"><img src="icon.jpg" alt="TAI Research Logo" /></span>
+      <span>
+        <span class="logo-name">TAI Developer Platform</span>
+        <small>Build with Intelligence</small>
+      </span>
+    </a>
+    <nav class="site-nav">
+      <a href="index.html">Home</a>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="playground.html">Playground</a>
+      <a href="docs.html">Docs</a>
+      <a href="pricing.html">Pricing</a>
+      <a href="#" id="loginBtn" class="btn sm">Login</a>
     </nav>
   </header>
 
-  <!-- Hero Section -->
-  <section class="py-20 gradient-bg text-white">
-    <div class="max-w-6xl mx-auto px-6 text-center">
-      <h1 class="text-5xl font-bold mb-6">Get In Touch</h1>
-      <p class="text-xl opacity-90 max-w-3xl mx-auto">
+  <main class="container">
+    <!-- Hero -->
+    <section class="page-hero text-center">
+      <h1>Get In Touch</h1>
+      <p class="lead" style="margin:0 auto;">
         We'd love to hear from you. Whether you have questions about our platform, want to collaborate, or just want to say hello.
       </p>
-    </div>
-  </section>
+    </section>
 
-  <!-- Contact Methods -->
-  <section class="py-16 bg-white">
-    <div class="max-w-6xl mx-auto px-6">
-      <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">How to Reach Us</h2>
-      
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div class="bg-blue-50 rounded-xl p-6 text-center card-hover">
-          <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <i class="fas fa-envelope text-blue-600 text-2xl"></i>
-          </div>
-          <h3 class="text-xl font-bold text-gray-800 mb-3">Email</h3>
-          <p class="text-gray-600 mb-4">For general inquiries and support</p>
-          <a href="mailto:TAI-Research@outlook.com" class="text-blue-600 font-medium hover:text-blue-800">TAI-Research@outlook.com</a>
+    <!-- Contact Methods -->
+    <section>
+      <div class="section-head">
+        <h2>How to Reach Us</h2>
+      </div>
+
+      <div class="grid grid-3 grid-flush">
+        <div class="card text-center">
+          <div class="icon-chip round center"><i class="fas fa-envelope"></i></div>
+          <h3>Email</h3>
+          <p class="muted">For general inquiries and support</p>
+          <a class="btn" href="mailto:TAI-Research@outlook.com">TAI-Research@outlook.com</a>
         </div>
-        
-        <div class="bg-green-50 rounded-xl p-6 text-center card-hover">
-          <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <i class="fab fa-discord text-green-600 text-2xl"></i>
-          </div>
-          <h3 class="text-xl font-bold text-gray-800 mb-3">Community</h3>
-          <p class="text-gray-600 mb-4">Join our Discord for real-time discussions</p>
-          <a href="#" class="text-green-600 font-medium hover:text-green-800">Join Discord Server</a>
+
+        <div class="card text-center">
+          <div class="icon-chip round green center"><i class="fab fa-discord"></i></div>
+          <h3>Community</h3>
+          <p class="muted">Join our Discord for real-time discussions</p>
+          <a class="btn outline" href="#">Join Discord Server</a>
         </div>
-        
-        <div class="bg-purple-50 rounded-xl p-6 text-center card-hover">
-          <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <i class="fab fa-github text-purple-600 text-2xl"></i>
-          </div>
-          <h3 class="text-xl font-bold text-gray-800 mb-3">GitHub</h3>
-          <p class="text-gray-600 mb-4">Explore our open-source projects</p>
-          <a href="#" class="text-purple-600 font-medium hover:text-purple-800">Visit GitHub</a>
+
+        <div class="card text-center">
+          <div class="icon-chip round purple center"><i class="fab fa-github"></i></div>
+          <h3>GitHub</h3>
+          <p class="muted">Explore our open-source projects</p>
+          <a class="btn outline" href="#">Visit GitHub</a>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Contact Form -->
-  <section class="py-16 bg-gray-50">
-    <div class="max-w-4xl mx-auto px-6">
-      <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">Send Us a Message</h2>
-      
-      <div class="bg-white rounded-xl shadow p-8">
-        <form class="space-y-6">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label class="block text-gray-700 mb-2" for="name">Full Name</label>
-              <input type="text" id="name" class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+    <!-- Contact Form -->
+    <section>
+      <div class="section-head">
+        <h2>Send Us a Message</h2>
+      </div>
+
+      <div class="card form-card" style="max-width:820px;margin:0 auto;">
+        <form>
+          <div class="form-grid">
+            <div class="field">
+              <label for="name">Full Name</label>
+              <input type="text" id="name" required />
             </div>
-            
-            <div>
-              <label class="block text-gray-700 mb-2" for="email">Email Address</label>
-              <input type="email" id="email" class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+
+            <div class="field">
+              <label for="email">Email Address</label>
+              <input type="email" id="email" required />
             </div>
           </div>
-          
-          <div>
-            <label class="block text-gray-700 mb-2" for="subject">Subject</label>
-            <select id="subject" class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+
+          <div class="field">
+            <label for="subject">Subject</label>
+            <select id="subject" required>
               <option value="">Select a subject</option>
               <option value="general">General Inquiry</option>
               <option value="support">Technical Support</option>
@@ -121,110 +134,121 @@
               <option value="other">Other</option>
             </select>
           </div>
-          
-          <div>
-            <label class="block text-gray-700 mb-2" for="message">Message</label>
-            <textarea id="message" rows="6" class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Tell us how we can help..." required></textarea>
+
+          <div class="field">
+            <label for="message">Message</label>
+            <textarea id="message" rows="6" placeholder="Tell us how we can help..." required></textarea>
           </div>
-          
-          <button type="submit" class="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition btn-primary">
-            Send Message
-          </button>
+
+          <button type="submit" class="btn block">Send Message</button>
         </form>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- FAQ Section -->
-  <section class="py-16 bg-white">
-    <div class="max-w-4xl mx-auto px-6">
-      <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">Frequently Asked Questions</h2>
-      
-      <div class="space-y-6">
-        <div class="bg-gray-50 rounded-xl p-6">
-          <h3 class="text-xl font-semibold text-gray-800 mb-2">How quickly can I expect a response?</h3>
-          <p class="text-gray-600">We typically respond to all inquiries within 24-48 hours. For urgent technical issues, please join our Discord community for faster assistance.</p>
+    <!-- FAQ -->
+    <section>
+      <div class="section-head">
+        <h2>Frequently Asked Questions</h2>
+      </div>
+
+      <div class="stack" style="gap:20px;">
+        <div class="card card-soft">
+          <h3>How quickly can I expect a response?</h3>
+          <p class="muted">
+            We typically respond to all inquiries within 24-48 hours. For urgent technical issues, please join our Discord community for faster assistance.
+          </p>
         </div>
-        
-        <div class="bg-gray-50 rounded-xl p-6">
-          <h3 class="text-xl font-semibold text-gray-800 mb-2">Do you offer custom model training?</h3>
-          <p class="text-gray-600">While our primary focus is on our general-purpose models, we're open to discussing custom solutions for unique use cases. Please contact us with details about your project.</p>
+
+        <div class="card card-soft">
+          <h3>Do you offer custom model training?</h3>
+          <p class="muted">
+            While our primary focus is on our general-purpose models, we're open to discussing custom solutions for unique use cases. Please contact us with details about your project.
+          </p>
         </div>
-        
-        <div class="bg-gray-50 rounded-xl p-6">
-          <h3 class="text-xl font-semibold text-gray-800 mb-2">Can I contribute to TAI Research?</h3>
-          <p class="text-gray-600">Absolutely! We welcome contributions to our open-source projects. Check out our GitHub repository for opportunities to contribute. You can also apply for our internship programs.</p>
+
+        <div class="card card-soft">
+          <h3>Can I contribute to TAI Research?</h3>
+          <p class="muted">
+            Absolutely! We welcome contributions to our open-source projects. Check out our GitHub repository for opportunities to contribute. You can also apply for our internship programs.
+          </p>
         </div>
-        
-        <div class="bg-gray-50 rounded-xl p-6">
-          <h3 class="text-xl font-semibold text-gray-800 mb-2">Do you offer educational discounts?</h3>
-          <p class="text-gray-600">As students ourselves, we understand the importance of education. We offer special pricing for educational institutions and student projects. Contact us to learn more.</p>
+
+        <div class="card card-soft">
+          <h3>Do you offer educational discounts?</h3>
+          <p class="muted">
+            As students ourselves, we understand the importance of education. We offer special pricing for educational institutions and student projects. Contact us to learn more.
+          </p>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Student Team Section -->
-  <section class="py-16 bg-gradient-to-r from-blue-50 to-indigo-50">
-    <div class="max-w-4xl mx-auto px-6 text-center">
-      <h2 class="text-3xl font-bold text-gray-800 mb-6">Built by Students, For Developers</h2>
-      <p class="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
-        We're a team of high school students passionate about AI. Despite limited resources, we've created TAI to make powerful AI models accessible to everyone. Your support helps us continue improving and expanding our services.
-      </p>
-      <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="about.html" class="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition btn-primary">
-          Learn Our Story
-        </a>
-        <a href="pricing.html" class="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition">
-          Start Building
-        </a>
+    <!-- Closing -->
+    <section class="section-plain">
+      <div class="cta-band">
+        <h2>Built by Students, For Developers</h2>
+        <p>
+          We're a team of high school students passionate about AI. Despite limited resources, we've created TAI to make powerful AI models accessible to everyone. Your support helps us continue improving and expanding our services.
+        </p>
+        <div class="btn-row">
+          <a class="btn lg" href="about.html">Learn Our Story</a>
+          <a class="btn outline lg" href="pricing.html">Start Building</a>
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
+  </main>
 
   <!-- Footer -->
-  <footer class="bg-gray-800 text-white py-12">
-    <div class="max-w-6xl mx-auto px-6">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+  <footer class="site-footer">
+    <div class="container-wide">
+      <div class="footer-grid">
         <div>
-          <div class="flex items-center space-x-3 mb-4">
-            <img src="icon.jpg" class="w-10 h-10 rounded-full" alt="TAI logo" />
-            <h3 class="text-xl font-semibold">TAI Developer Platform</h3>
+          <div class="footer-brand">
+            <img src="icon.jpg" alt="TAI Research Logo" />
+            <span>TAI Developer Platform</span>
           </div>
-          <p class="text-gray-400">Building the Future of Creation with AI.</p>
+          <p class="muted">Building the Future of Creation with AI.</p>
         </div>
-        <div>
-          <h4 class="text-lg font-semibold mb-4">Platform</h4>
-          <ul class="space-y-2 text-gray-400">
-            <li><a href="dashboard.html" class="hover:text-white transition">Dashboard</a></li>
-            <li><a href="playground.html" class="hover:text-white transition">Playground</a></li>
-            <li><a href="docs.html" class="hover:text-white transition">Documentation</a></li>
-            <li><a href="pricing.html" class="hover:text-white transition">Pricing</a></li>
+        <div class="footer-col">
+          <h4>Platform</h4>
+          <ul>
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="playground.html">Playground</a></li>
+            <li><a href="docs.html">Documentation</a></li>
+            <li><a href="pricing.html">Pricing</a></li>
           </ul>
         </div>
-        <div>
-          <h4 class="text-lg font-semibold mb-4">Resources</h4>
-          <ul class="space-y-2 text-gray-400">
-            <li><a href="blog.html" class="hover:text-white transition">Blog</a></li>
-            <li><a href="community.html" class="hover:text-white transition">Community</a></li>
-            <li><a href="support.html" class="hover:text-white transition">Support</a></li>
-            <li><a href="status.html" class="hover:text-white transition">Status</a></li>
+        <div class="footer-col">
+          <h4>Resources</h4>
+          <ul>
+            <li><a href="community.html">Community</a></li>
+            <li><a href="support.html">Support</a></li>
+            <li><a href="status.html">Status</a></li>
           </ul>
         </div>
-        <div>
-          <h4 class="text-lg font-semibold mb-4">Company</h4>
-          <ul class="space-y-2 text-gray-400">
-            <li><a href="about.html" class="hover:text-white transition">About</a></li>
-            <li><a href="careers.html" class="hover:text-white transition">Careers</a></li>
-            <li><a href="contact.html" class="hover:text-white transition">Contact</a></li>
-            <li><a href="privacy.html" class="hover:text-white transition">Privacy Policy</a></li>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="about.html">About</a></li>
+            <li><a href="careers.html">Careers</a></li>
+            <li><a href="contact.html">Contact</a></li>
+            <li><a href="privacy.html">Privacy Policy</a></li>
           </ul>
         </div>
       </div>
-      <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
-        <p>© 2025 TAI Research. All rights reserved.</p>
+      <div class="footer-bottom">
+        <div>© TAI Research. All rights reserved.</div>
+        <div class="footer-social">
+          <a href="https://github.com/LTYLeo" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://huggingface.co/TAI-Research" target="_blank" rel="noopener">Hugging Face</a>
+          <a href="https://space.bilibili.com/88158150" target="_blank" rel="noopener">Bilibili</a>
+        </div>
       </div>
     </div>
   </footer>
+  <!-- i18n: English lives in the markup, locales/zh.js supplies the Chinese strings -->
+  <script src="config.js"></script>
+  <script src="locales/zh.js"></script>
+  <script src="i18n.js"></script>
+  <script src="auth.js"></script>
 </body>
 </html>

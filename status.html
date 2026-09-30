@@ -5,327 +5,307 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Status - TAI Developer Platform</title>
   <link rel="icon" href="icon.jpg" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Locale must be decided before first paint so Chinese users never see an English flash -->
+  <script>
+    (function () {
+      try {
+        var lang = 'en';
+        var fromUrl = /[?&]lang=(en|zh)(?![a-z])/i.exec(location.search);
+        var saved = localStorage.getItem('tai-lang');
+        if (fromUrl) {
+          lang = fromUrl[1].toLowerCase();
+        } else if (saved === 'zh' || saved === 'en') {
+          lang = saved;
+        } else {
+          var list = (navigator.languages && navigator.languages.length)
+            ? navigator.languages : [navigator.language || 'en'];
+          for (var i = 0; i < list.length; i++) {
+            var l = String(list[i]).toLowerCase();
+            if (l.indexOf('zh') === 0) { lang = 'zh'; break; }
+            if (l.indexOf('en') === 0) { lang = 'en'; break; }
+          }
+        }
+        document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh-CN' : 'en');
+        if (lang !== 'en') {
+          document.documentElement.className += ' i18n-pending';
+          setTimeout(function () {
+            document.documentElement.classList.remove('i18n-pending');
+          }, 2000);
+        }
+      } catch (e) { /* private mode / no storage */ }
+    })();
+  </script>
+  <link rel="stylesheet" href="theme.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <style>
-    .gradient-bg {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    /* page-specific: overall status head, incident meta rows, metrics figures */
+    .status-head {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
     }
-    .card-hover {
-      transition: all 0.3s ease;
+    .status-head h2 { margin: 0; }
+    .incident-meta {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
     }
-    .card-hover:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-    }
-    .btn-primary {
-      transition: all 0.3s ease;
-    }
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-    }
-    .status-indicator {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      display: inline-block;
-      margin-right: 8px;
-    }
-    .status-operational {
-      background-color: #10b981;
-    }
-    .status-degraded {
-      background-color: #f59e0b;
-    }
-    .status-outage {
-      background-color: #ef4444;
-    }
-    .status-maintenance {
-      background-color: #6b7280;
-    }
+    .incident-impact { font-size: 13px; color: var(--muted); }
+    .incident-impact strong { color: #cbd5e6; font-weight: 600; }
+    .metric-figures { margin-top: 16px; font-size: 14px; }
+    .metric-figures p { color: var(--muted); margin-bottom: 6px; }
+    .metric-figures strong { color: var(--text); font-weight: 500; }
+    .status-cta { text-align: center; margin-top: 28px; }
   </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans">
+<body>
   <!-- Navbar -->
-  <header class="flex justify-between items-center px-10 py-5 bg-white shadow-md sticky top-0 z-50">
-    <div class="flex items-center space-x-3">
-      <img src="icon.jpg" class="w-10 h-10 rounded-full" alt="TAI logo" />
-      <h1 class="text-2xl font-semibold text-gray-800">TAI Developer Platform</h1>
-    </div>
-    <nav class="space-x-6 flex items-center">
-      <a href="index.html" class="hover:text-blue-600">Home</a>
-      <a href="dashboard.html" class="hover:text-blue-600">Dashboard</a>
-      <a href="playground.html" class="hover:text-blue-600">Playground</a>
-      <a href="docs.html" class="hover:text-blue-600">Docs</a>
-      <a href="pricing.html" class="hover:text-blue-600">Pricing</a>
-      <a href="#" id="loginBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition btn-primary">Login</a>
+  <header class="container site-header">
+    <a class="logo" href="index.html">
+      <span class="mark"><img src="icon.jpg" alt="TAI Research Logo" /></span>
+      <span>
+        <span class="logo-name">TAI Developer Platform</span>
+        <small>Build with Intelligence</small>
+      </span>
+    </a>
+    <nav class="site-nav">
+      <a href="index.html">Home</a>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="playground.html">Playground</a>
+      <a href="docs.html">Docs</a>
+      <a href="pricing.html">Pricing</a>
+      <a href="#" id="loginBtn" class="btn sm">Login</a>
     </nav>
   </header>
 
-  <!-- Status Hero Section -->
-  <section class="py-16 gradient-bg text-white">
-    <div class="max-w-4xl mx-auto text-center px-6">
-      <h1 class="text-4xl font-bold mb-4">TAI Platform Status</h1>
-      <p class="text-xl opacity-90">Real-time information about the status of our services</p>
-    </div>
-  </section>
+  <main class="container-narrow">
+    <!-- Status hero -->
+    <section class="page-hero" style="text-align:center;">
+      <h1>TAI Platform Status</h1>
+      <p class="lead" style="margin:0 auto;">Real-time information about the status of our services</p>
+    </section>
 
-  <!-- Overall Status -->
-  <section class="py-12">
-    <div class="max-w-4xl mx-auto px-6">
-      <div class="bg-white rounded-xl shadow p-8 text-center">
-        <div class="flex items-center justify-center mb-4">
+    <!-- Overall status -->
+    <section>
+      <div class="card text-center" style="padding:32px;">
+        <div class="status-head">
           <span class="status-indicator status-operational"></span>
-          <h2 class="text-2xl font-bold text-gray-800">All Systems Operational</h2>
+          <h2>All Systems Operational</h2>
         </div>
-        <p class="text-gray-600 mb-6">All TAI services are running normally.</p>
-        <div class="text-sm text-gray-500">
+        <p class="muted">All TAI services are running normally.</p>
+        <div class="muted small">
           Last updated: <span id="lastUpdated">Just now</span>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Service Status -->
-  <section class="py-12 bg-gray-50">
-    <div class="max-w-4xl mx-auto px-6">
-      <h2 class="text-2xl font-bold text-gray-800 mb-8">Service Status</h2>
-      <div class="bg-white rounded-xl shadow overflow-hidden">
-        <div class="divide-y divide-gray-200">
-          <!-- API Service -->
-          <div class="p-6">
-            <div class="flex items-center justify-between">
-              <div>
-                <h3 class="text-lg font-semibold text-gray-800">TAI API</h3>
-                <p class="text-gray-600">Core API endpoints for model inference</p>
-              </div>
-              <div class="flex items-center">
-                <span class="status-indicator status-operational"></span>
-                <span class="text-green-600 font-medium">Operational</span>
-              </div>
-            </div>
+    <!-- Service Status -->
+    <section>
+      <h2>Service Status</h2>
+      <div class="status-box">
+        <!-- API Service -->
+        <div class="status-row">
+          <div>
+            <div class="status-name">TAI API</div>
+            <div class="status-desc">Core API endpoints for model inference</div>
           </div>
-
-          <!-- Playground Service -->
-          <div class="p-6">
-            <div class="flex items-center justify-between">
-              <div>
-                <h3 class="text-lg font-semibold text-gray-800">Playground</h3>
-                <p class="text-gray-600">Web interface for testing models</p>
-              </div>
-              <div class="flex items-center">
-                <span class="status-indicator status-operational"></span>
-                <span class="text-green-600 font-medium">Operational</span>
-              </div>
-            </div>
+          <div class="status-state">
+            <span class="status-indicator status-operational"></span>Operational
           </div>
+        </div>
 
-          <!-- Dashboard Service -->
-          <div class="p-6">
-            <div class="flex items-center justify-between">
-              <div>
-                <h3 class="text-lg font-semibold text-gray-800">Dashboard</h3>
-                <p class="text-gray-600">Account management and analytics</p>
-              </div>
-              <div class="flex items-center">
-                <span class="status-indicator status-operational"></span>
-                <span class="text-green-600 font-medium">Operational</span>
-              </div>
-            </div>
+        <!-- Playground Service -->
+        <div class="status-row">
+          <div>
+            <div class="status-name">Playground</div>
+            <div class="status-desc">Web interface for testing models</div>
           </div>
-
-          <!-- Authentication Service -->
-          <div class="p-6">
-            <div class="flex items-center justify-between">
-              <div>
-                <h3 class="text-lg font-semibold text-gray-800">Authentication</h3>
-                <p class="text-gray-600">User login and API key validation</p>
-              </div>
-              <div class="flex items-center">
-                <span class="status-indicator status-operational"></span>
-                <span class="text-green-600 font-medium">Operational</span>
-              </div>
-            </div>
+          <div class="status-state">
+            <span class="status-indicator status-operational"></span>Operational
           </div>
+        </div>
 
-          <!-- Billing Service -->
-          <div class="p-6">
-            <div class="flex items-center justify-between">
-              <div>
-                <h3 class="text-lg font-semibold text-gray-800">Billing</h3>
-                <p class="text-gray-600">Subscription management and payment processing</p>
-              </div>
-              <div class="flex items-center">
-                <span class="status-indicator status-operational"></span>
-                <span class="text-green-600 font-medium">Operational</span>
-              </div>
-            </div>
+        <!-- Dashboard Service -->
+        <div class="status-row">
+          <div>
+            <div class="status-name">Dashboard</div>
+            <div class="status-desc">Account management and analytics</div>
+          </div>
+          <div class="status-state">
+            <span class="status-indicator status-operational"></span>Operational
+          </div>
+        </div>
+
+        <!-- Authentication Service -->
+        <div class="status-row">
+          <div>
+            <div class="status-name">Authentication</div>
+            <div class="status-desc">User login and API key validation</div>
+          </div>
+          <div class="status-state">
+            <span class="status-indicator status-operational"></span>Operational
+          </div>
+        </div>
+
+        <!-- Billing Service -->
+        <div class="status-row">
+          <div>
+            <div class="status-name">Billing</div>
+            <div class="status-desc">Subscription management and payment processing</div>
+          </div>
+          <div class="status-state">
+            <span class="status-indicator status-operational"></span>Operational
           </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Incident History -->
-  <section class="py-12">
-    <div class="max-w-4xl mx-auto px-6">
-      <h2 class="text-2xl font-bold text-gray-800 mb-8">Incident History</h2>
-      <div class="space-y-6">
+    <!-- Incident History -->
+    <section>
+      <h2>Incident History</h2>
+      <div class="stack" style="gap:24px;">
         <!-- Incident 1 -->
-        <div class="bg-white rounded-xl shadow p-6">
-          <div class="flex items-start justify-between mb-4">
-            <div>
-              <h3 class="text-xl font-bold text-gray-800">API Performance Issues</h3>
-              <div class="flex items-center mt-1">
-                <span class="status-indicator status-degraded"></span>
-                <span class="text-orange-500 font-medium mr-4">Degraded Performance</span>
-                <span class="text-gray-500">May 10, 2025 · Resolved</span>
-              </div>
-            </div>
+        <div class="card">
+          <h3>API Performance Issues</h3>
+          <div class="incident-meta">
+            <span class="status-state warn">
+              <span class="status-indicator status-degraded"></span>Degraded Performance
+            </span>
+            <span class="muted small">May 10 · Resolved</span>
           </div>
-          <p class="text-gray-600 mb-4">Some users experienced higher than normal latency when making API requests to our GTC-2 Turbo model between 14:30 and 16:45 UTC.</p>
-          <div class="text-sm text-gray-500">
-            <span class="font-medium">Impact:</span> Partial outage - GTC-2 Turbo model only
+          <p class="muted">Some users experienced higher than normal latency when making API requests to our TFMF model between 14:30 and 16:45 UTC.</p>
+          <div class="incident-impact">
+            <strong>Impact:</strong> Partial outage - TFMF model only
           </div>
         </div>
 
         <!-- Incident 2 -->
-        <div class="bg-white rounded-xl shadow p-6">
-          <div class="flex items-start justify-between mb-4">
-            <div>
-              <h3 class="text-xl font-bold text-gray-800">Scheduled Maintenance</h3>
-              <div class="flex items-center mt-1">
-                <span class="status-indicator status-maintenance"></span>
-                <span class="text-gray-500 font-medium mr-4">Maintenance</span>
-                <span class="text-gray-500">April 28, 2025 · Completed</span>
-              </div>
-            </div>
+        <div class="card">
+          <h3>Scheduled Maintenance</h3>
+          <div class="incident-meta">
+            <span class="status-state muted-state">
+              <span class="status-indicator status-maintenance"></span>Maintenance
+            </span>
+            <span class="muted small">April 28 · Completed</span>
           </div>
-          <p class="text-gray-600 mb-4">We performed scheduled maintenance to upgrade our infrastructure and improve performance. The maintenance window was from 02:00 to 04:00 UTC.</p>
-          <div class="text-sm text-gray-500">
-            <span class="font-medium">Impact:</span> Full outage - All services
+          <p class="muted">We performed scheduled maintenance to upgrade our infrastructure and improve performance. The maintenance window was from 02:00 to 04:00 UTC.</p>
+          <div class="incident-impact">
+            <strong>Impact:</strong> Full outage - All services
           </div>
         </div>
 
         <!-- Incident 3 -->
-        <div class="bg-white rounded-xl shadow p-6">
-          <div class="flex items-start justify-between mb-4">
-            <div>
-              <h3 class="text-xl font-bold text-gray-800">Authentication Service Interruption</h3>
-              <div class="flex items-center mt-1">
-                <span class="status-indicator status-outage"></span>
-                <span class="text-red-500 font-medium mr-4">Service Disruption</span>
-                <span class="text-gray-500">April 15, 2025 · Resolved</span>
-              </div>
-            </div>
+        <div class="card">
+          <h3>Authentication Service Interruption</h3>
+          <div class="incident-meta">
+            <span class="status-state danger">
+              <span class="status-indicator status-outage"></span>Service Disruption
+            </span>
+            <span class="muted small">April 15 · Resolved</span>
           </div>
-          <p class="text-gray-600 mb-4">Our authentication service experienced an unexpected outage, preventing users from logging in or making API requests for approximately 45 minutes.</p>
-          <div class="text-sm text-gray-500">
-            <span class="font-medium">Impact:</span> Full outage - All services
+          <p class="muted">Our authentication service experienced an unexpected outage, preventing users from logging in or making API requests for approximately 45 minutes.</p>
+          <div class="incident-impact">
+            <strong>Impact:</strong> Full outage - All services
           </div>
         </div>
       </div>
 
-      <div class="text-center mt-8">
-        <a href="#" class="inline-block px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition btn-primary">
-          View Full Incident History
-        </a>
+      <div class="status-cta">
+        <a href="#" class="view-all-link">View Full Incident History</a>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Subscribe to Updates -->
-  <section class="py-16 bg-gray-50">
-    <div class="max-w-3xl mx-auto text-center px-6">
-      <h2 class="text-3xl font-bold text-gray-800 mb-4">Stay Informed</h2>
-      <p class="text-gray-600 mb-8">Subscribe to get real-time status updates delivered to your inbox or phone.</p>
-      <div class="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-        <input type="email" placeholder="Your email address" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-        <button class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition btn-primary">Subscribe</button>
+    <!-- Stay Informed -->
+    <section>
+      <div class="section-head">
+        <h2>Stay Informed</h2>
+        <p>Subscribe to get real-time status updates delivered to your inbox or phone.</p>
       </div>
-      <div class="mt-6">
-        <a href="#" class="text-blue-600 hover:text-blue-800 inline-flex items-center">
-          <i class="fas fa-rss mr-2"></i>
-          RSS Feed
-        </a>
+      <div class="search-bar" style="max-width:448px;">
+        <input type="email" placeholder="Your email address" />
+        <button class="btn">Subscribe</button>
       </div>
-    </div>
-  </section>
+      <div class="text-center" style="margin-top:20px;">
+        <a href="#"><i class="fas fa-rss"></i> RSS Feed</a>
+      </div>
+    </section>
 
-  <!-- System Metrics -->
-  <section class="py-12 bg-white">
-    <div class="max-w-4xl mx-auto px-6">
-      <h2 class="text-2xl font-bold text-gray-800 mb-8">System Metrics</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <!-- System Metrics -->
+    <section class="section-plain">
+      <h2>System Metrics</h2>
+      <div class="grid grid-2 grid-flush">
         <!-- API Response Times -->
-        <div class="bg-gray-50 rounded-xl p-6">
-          <h3 class="text-lg font-semibold text-gray-800 mb-4">API Response Times</h3>
-          <div class="h-48 bg-white rounded-lg border border-gray-200 flex items-center justify-center">
-            <p class="text-gray-500">Response time chart would be displayed here</p>
-          </div>
-          <div class="mt-4 text-sm text-gray-600">
-            <p>Average response time: <span class="font-medium">245ms</span></p>
-            <p>95th percentile: <span class="font-medium">412ms</span></p>
+        <div class="card">
+          <h3>API Response Times</h3>
+          <div class="chart-placeholder">Response time chart would be displayed here</div>
+          <div class="metric-figures">
+            <p>Average response time: <strong>245ms</strong></p>
+            <p>95th percentile: <strong>412ms</strong></p>
           </div>
         </div>
 
         <!-- API Requests -->
-        <div class="bg-gray-50 rounded-xl p-6">
-          <h3 class="text-lg font-semibold text-gray-800 mb-4">API Requests (Last 24h)</h3>
-          <div class="h-48 bg-white rounded-lg border border-gray-200 flex items-center justify-center">
-            <p class="text-gray-500">Request volume chart would be displayed here</p>
-          </div>
-          <div class="mt-4 text-sm text-gray-600">
-            <p>Total requests: <span class="font-medium">2.4M</span></p>
-            <p>Success rate: <span class="font-medium">99.8%</span></p>
+        <div class="card">
+          <h3>API Requests (Last 24h)</h3>
+          <div class="chart-placeholder">Request volume chart would be displayed here</div>
+          <div class="metric-figures">
+            <p>Total requests: <strong>2.4M</strong></p>
+            <p>Success rate: <strong>99.8%</strong></p>
           </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
+  </main>
 
   <!-- Footer -->
-  <footer class="bg-gray-800 text-white py-12">
-    <div class="max-w-6xl mx-auto px-6">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+  <footer class="site-footer">
+    <div class="container-wide">
+      <div class="footer-grid">
         <div>
-          <div class="flex items-center space-x-3 mb-4">
-            <img src="icon.jpg" class="w-10 h-10 rounded-full" alt="TAI logo" />
-            <h3 class="text-xl font-semibold">TAI Developer Platform</h3>
+          <div class="footer-brand">
+            <img src="icon.jpg" alt="TAI Research Logo" />
+            <span>TAI Developer Platform</span>
           </div>
-          <p class="text-gray-400">Building the Future of Creation with AI.</p>
+          <p class="muted">Building the Future of Creation with AI.</p>
         </div>
-        <div>
-          <h4 class="text-lg font-semibold mb-4">Platform</h4>
-          <ul class="space-y-2 text-gray-400">
-            <li><a href="dashboard.html" class="hover:text-white transition">Dashboard</a></li>
-            <li><a href="playground.html" class="hover:text-white transition">Playground</a></li>
-            <li><a href="docs.html" class="hover:text-white transition">Documentation</a></li>
-            <li><a href="pricing.html" class="hover:text-white transition">Pricing</a></li>
+        <div class="footer-col">
+          <h4>Platform</h4>
+          <ul>
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="playground.html">Playground</a></li>
+            <li><a href="docs.html">Documentation</a></li>
+            <li><a href="pricing.html">Pricing</a></li>
           </ul>
         </div>
-        <div>
-          <h4 class="text-lg font-semibold mb-4">Resources</h4>
-          <ul class="space-y-2 text-gray-400">
-            <li><a href="blog.html" class="hover:text-white transition">Blog</a></li>
-            <li><a href="community.html" class="hover:text-white transition">Community</a></li>
-            <li><a href="support.html" class="hover:text-white transition">Support</a></li>
-            <li><a href="status.html" class="hover:text-white transition">Status</a></li>
+        <div class="footer-col">
+          <h4>Resources</h4>
+          <ul>
+            <li><a href="community.html">Community</a></li>
+            <li><a href="support.html">Support</a></li>
+            <li><a href="status.html">Status</a></li>
           </ul>
         </div>
-        <div>
-          <h4 class="text-lg font-semibold mb-4">Company</h4>
-          <ul class="space-y-2 text-gray-400">
-            <li><a href="about.html" class="hover:text-white transition">About</a></li>
-            <li><a href="careers.html" class="hover:text-white transition">Careers</a></li>
-            <li><a href="contact.html" class="hover:text-white transition">Contact</a></li>
-            <li><a href="privacy.html" class="hover:text-white transition">Privacy Policy</a></li>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="about.html">About</a></li>
+            <li><a href="careers.html">Careers</a></li>
+            <li><a href="contact.html">Contact</a></li>
+            <li><a href="privacy.html">Privacy Policy</a></li>
           </ul>
         </div>
       </div>
-      <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
-        <p>© 2025 TAI Research. All rights reserved.</p>
+      <div class="footer-bottom">
+        <div>© TAI Research. All rights reserved.</div>
+        <div class="footer-social">
+          <a href="https://github.com/LTYLeo" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://huggingface.co/TAI-Research" target="_blank" rel="noopener">Hugging Face</a>
+          <a href="https://space.bilibili.com/88158150" target="_blank" rel="noopener">Bilibili</a>
+        </div>
       </div>
     </div>
   </footer>
@@ -334,22 +314,31 @@
     // 更新最后更新时间
     function updateLastUpdated() {
       const now = new Date();
-      const options = { 
-        year: 'numeric', 
-        month: 'short', 
+      const options = {
+        year: 'numeric',
+        month: 'short',
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
         timeZoneName: 'short'
       };
-      document.getElementById('lastUpdated').textContent = now.toLocaleDateString('en-US', options);
+      const locale = document.documentElement.lang === 'zh-CN' ? 'zh-CN' : 'en-US';
+      document.getElementById('lastUpdated').textContent = now.toLocaleDateString(locale, options);
     }
-    
+
+    // Re-render the timestamp when the visitor switches language
+    document.addEventListener('tai:langchange', updateLastUpdated);
+
     // 初始更新
     updateLastUpdated();
-    
+
     // 每分钟更新一次
     setInterval(updateLastUpdated, 60000);
   </script>
+  <!-- i18n: English lives in the markup, locales/zh.js supplies the Chinese strings -->
+  <script src="config.js"></script>
+  <script src="locales/zh.js"></script>
+  <script src="i18n.js"></script>
+  <script src="auth.js"></script>
 </body>
 </html>

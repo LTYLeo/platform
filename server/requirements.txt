@@ -1,0 +1,6 @@
+# The service only needs FastAPI + an ASGI server. Password hashing uses
+# hashlib.scrypt and storage uses sqlite3, both from the standard library,
+# so there are no compiled dependencies to build.
+fastapi>=0.110
+uvicorn[standard]>=0.27
+pydantic>=2.5

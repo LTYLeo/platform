@@ -5,136 +5,362 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TAI Developer Platform – Build with Intelligence</title>
   <link rel="icon" href="icon.jpg" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/framer-motion@10.16.3/dist/framer-motion.umd.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Locale must be decided before first paint so Chinese users never see an English flash -->
+  <script>
+    (function () {
+      try {
+        var lang = 'en';
+        var fromUrl = /[?&]lang=(en|zh)(?![a-z])/i.exec(location.search);
+        var saved = localStorage.getItem('tai-lang');
+        if (fromUrl) {
+          lang = fromUrl[1].toLowerCase();
+        } else if (saved === 'zh' || saved === 'en') {
+          lang = saved;
+        } else {
+          var list = (navigator.languages && navigator.languages.length)
+            ? navigator.languages : [navigator.language || 'en'];
+          for (var i = 0; i < list.length; i++) {
+            var l = String(list[i]).toLowerCase();
+            if (l.indexOf('zh') === 0) { lang = 'zh'; break; }
+            if (l.indexOf('en') === 0) { lang = 'en'; break; }
+          }
+        }
+        document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh-CN' : 'en');
+        if (lang !== 'en') {
+          document.documentElement.className += ' i18n-pending';
+          setTimeout(function () {
+            document.documentElement.classList.remove('i18n-pending');
+          }, 2000);
+        }
+      } catch (e) { /* private mode / no storage */ }
+    })();
+  </script>
+  <link rel="stylesheet" href="theme.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <style>
-    .gradient-bg {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-    .card-hover {
-      transition: all 0.3s ease;
-    }
-    .card-hover:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-    }
-    .sidebar {
-      transition: all 0.3s ease;
-    }
-    .chat-bubble-user {
-      background-color: #3b82f6;
-      color: white;
-      border-radius: 18px 18px 4px 18px;
-      padding: 12px 16px;
-      margin: 8px 0;
-      max-width: 80%;
-      align-self: flex-end;
-    }
-    .chat-bubble-ai {
-      background-color: #f1f5f9;
-      color: #334155;
-      border-radius: 18px 18px 18px 4px;
-      padding: 12px 16px;
-      margin: 8px 0;
-      max-width: 80%;
-      align-self: flex-start;
-    }
-    .code-block {
-      background-color: #1e293b;
-      color: #e2e8f0;
-      border-radius: 8px;
-      padding: 16px;
-      overflow-x: auto;
-      font-family: 'Courier New', monospace;
-      margin: 12px 0;
-    }
+    /* page-specific: keep in-card section headings proportionate to the cards */
+    .card > .row h2 { font-size: 22px; margin: 0; }
+    /* page-specific: breathing room between the two table row actions */
+    table.styled-table td .btn + .btn { margin-left: 8px; }
   </style>
 </head>
 <body>
-  <!-- 导航栏 -->
-  
-  <!-- Dashboard内容 -->
-  <div class="max-w-6xl mx-auto px-6 py-8">
-    <h1 class="text-3xl font-bold text-gray-800 mb-8">Dashboard</h1>
-    
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      <!-- API使用情况卡片 -->
-      <div class="bg-white rounded-xl shadow p-6">
-        <h3 class="text-lg font-semibold text-gray-700 mb-2">API Usage</h3>
-        <p class="text-2xl font-bold text-blue-600">1,245 <span class="text-sm text-gray-500">requests</span></p>
-        <p class="text-sm text-gray-500 mt-2">This month</p>
-      </div>
-      
-      <!-- 剩余配额卡片 -->
-      <div class="bg-white rounded-xl shadow p-6">
-        <h3 class="text-lg font-semibold text-gray-700 mb-2">Remaining Quota</h3>
-        <p class="text-2xl font-bold text-green-600">75%</p>
-        <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
-          <div class="bg-green-600 h-2 rounded-full" style="width: 75%"></div>
+  <!-- Navbar -->
+  <header class="container site-header">
+    <a class="logo" href="index.html">
+      <span class="mark"><img src="icon.jpg" alt="TAI Research Logo" /></span>
+      <span>
+        <span class="logo-name">TAI Developer Platform</span>
+        <small>Build with Intelligence</small>
+      </span>
+    </a>
+    <nav class="site-nav">
+      <a href="index.html">Home</a>
+      <a href="dashboard.html" class="active">Dashboard</a>
+      <a href="playground.html">Playground</a>
+      <a href="docs.html">Docs</a>
+      <a href="pricing.html">Pricing</a>
+      <a href="#" id="loginBtn" class="btn sm">Login</a>
+    </nav>
+  </header>
+
+  <main class="container-wide">
+    <!-- Dashboard heading + stats -->
+    <section class="page-hero">
+      <h1>Dashboard</h1>
+
+      <div class="grid grid-4 grid-flush">
+        <!-- Requests this month (real, from /api/usage) -->
+        <div class="card">
+          <h3>API Usage</h3>
+          <div class="stat-value"><span id="usageRequests">—</span> <span class="stat-unit">requests</span></div>
+          <div class="stat-label" id="usagePeriod">This month</div>
+        </div>
+
+        <!-- Tokens consumed, against the free grant -->
+        <div class="card">
+          <h3>Tokens Used</h3>
+          <div class="stat-value green"><span id="usageTokens">—</span></div>
+          <div class="stat-label"><span id="freeTokensLeft">Sign in to view</span></div>
+        </div>
+
+        <!-- Active API keys -->
+        <div class="card">
+          <h3>API Keys</h3>
+          <div class="stat-value purple"><span id="activeKeyCount">—</span> <span class="stat-unit">active</span></div>
+          <div class="stat-label" id="activeKeyLabel">Sign in to view</div>
+        </div>
+
+        <!-- Balance, from the credit ledger -->
+        <div class="card">
+          <h3>Billing</h3>
+          <div class="stat-value amber">¥<span id="usageBalance">—</span></div>
+          <div class="stat-label" id="usageCost">Current balance</div>
         </div>
       </div>
-      
-      <!-- API密钥状态卡片 -->
-      <div class="bg-white rounded-xl shadow p-6">
-        <h3 class="text-lg font-semibold text-gray-700 mb-2">API Keys</h3>
-        <p class="text-2xl font-bold text-purple-600">3 <span class="text-sm text-gray-500">active</span></p>
-        <p class="text-sm text-gray-500 mt-2">1 inactive</p>
+    </section>
+
+    <!-- API keys -->
+    <section class="section-plain" style="padding-top:24px;">
+      <div class="card">
+        <div class="row row-between" style="margin-bottom:18px;">
+          <h2>API Keys</h2>
+          <button type="button" class="btn sm" id="createKeyBtn">Create New Key</button>
+        </div>
+
+        <div class="empty-state" id="keysAuth" hidden>Please sign in to manage your API keys.</div>
+        <div class="empty-state" id="keysEmpty" hidden>No API keys yet. Create one to get started.</div>
+
+        <div class="table-wrap" id="keysTable" hidden>
+          <table class="styled-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Key</th>
+                <th>Created</th>
+                <th>Last Used</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="keyRows"></tbody>
+          </table>
+        </div>
+
+        <div class="key-reveal" id="keyReveal" hidden>
+          <strong>Your new API key</strong>
+          <code id="keyRevealValue"></code>
+          <p class="note">Copy this key now — it will not be shown again.</p>
+        </div>
       </div>
-      
-      <!-- 账单卡片 -->
-      <div class="bg-white rounded-xl shadow p-6">
-        <h3 class="text-lg font-semibold text-gray-700 mb-2">Billing</h3>
-        <p class="text-2xl font-bold text-orange-600">$42.50</p>
-        <p class="text-sm text-gray-500 mt-2">Current balance</p>
+
+      <!-- Usage statistics -->
+      <div class="card" style="margin-top:24px;">
+        <h2 style="font-size:22px;margin-bottom:18px;">Usage Statistics</h2>
+        <div class="chart-placeholder">Usage chart would be displayed here</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container-wide">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-brand">
+            <img src="icon.jpg" alt="TAI Research Logo" />
+            <span>TAI Developer Platform</span>
+          </div>
+          <p class="muted">Building the Future of Creation with AI.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Platform</h4>
+          <ul>
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="playground.html">Playground</a></li>
+            <li><a href="docs.html">Documentation</a></li>
+            <li><a href="pricing.html">Pricing</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Resources</h4>
+          <ul>
+            <li><a href="community.html">Community</a></li>
+            <li><a href="support.html">Support</a></li>
+            <li><a href="status.html">Status</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="about.html">About</a></li>
+            <li><a href="careers.html">Careers</a></li>
+            <li><a href="contact.html">Contact</a></li>
+            <li><a href="privacy.html">Privacy Policy</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div>© TAI Research. All rights reserved.</div>
+        <div class="footer-social">
+          <a href="https://github.com/LTYLeo" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://huggingface.co/TAI-Research" target="_blank" rel="noopener">Hugging Face</a>
+          <a href="https://space.bilibili.com/88158150" target="_blank" rel="noopener">Bilibili</a>
+        </div>
       </div>
     </div>
-    
-    <!-- API密钥管理部分 -->
-    <div class="bg-white rounded-xl shadow p-6 mb-8">
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="text-xl font-semibold text-gray-800">API Keys</h2>
-        <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Create New Key</button>
-      </div>
-      
-      <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead>
-            <tr class="border-b">
-              <th class="py-3 text-left">Name</th>
-              <th class="py-3 text-left">Key</th>
-              <th class="py-3 text-left">Created</th>
-              <th class="py-3 text-left">Last Used</th>
-              <th class="py-3 text-left">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr class="border-b">
-              <td class="py-3">Production Key</td>
-              <td class="py-3 font-mono text-sm">sk-••••••••••••••••••••</td>
-              <td class="py-3">Mar 15, 2025</td>
-              <td class="py-3">Today</td>
-              <td class="py-3">
-                <button class="text-blue-600 hover:text-blue-800 mr-3">Copy</button>
-                <button class="text-red-600 hover:text-red-800">Revoke</button>
-              </td>
-            </tr>
-            <!-- 更多API密钥行 -->
-          </tbody>
-        </table>
-      </div>
-    </div>
-    
-    <!-- 使用统计图表部分 -->
-    <div class="bg-white rounded-xl shadow p-6">
-      <h2 class="text-xl font-semibold text-gray-800 mb-6">Usage Statistics</h2>
-      <!-- 这里可以添加图表 -->
-      <div class="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
-        <p class="text-gray-500">Usage chart would be displayed here</p>
-      </div>
-    </div>
-  </div>
-  
-  <!-- 页脚 -->
+  </footer>
+  <!-- i18n: English lives in the markup, locales/zh.js supplies the Chinese strings -->
+
+
+  <script src="config.js"></script>
+  <script src="locales/zh.js"></script>
+  <script src="i18n.js"></script>
+  <script src="auth.js"></script>
+
+  <script>
+    /* Dashboard: renders the signed-in user's API keys from the real API. */
+    (function () {
+      function t(s) { return window.TAIi18n ? window.TAIi18n.t(s) : s; }
+
+      var rows = document.getElementById('keyRows');
+      var table = document.getElementById('keysTable');
+      var empty = document.getElementById('keysEmpty');
+      var authNote = document.getElementById('keysAuth');
+      var reveal = document.getElementById('keyReveal');
+      var revealValue = document.getElementById('keyRevealValue');
+      var createBtn = document.getElementById('createKeyBtn');
+      var count = document.getElementById('activeKeyCount');
+      var countLabel = document.getElementById('activeKeyLabel');
+
+      function locale() {
+        return document.documentElement.lang === 'zh-CN' ? 'zh-CN' : 'en-US';
+      }
+
+      function formatDate(iso) {
+        if (!iso) return t('Never');
+        return new Date(iso).toLocaleDateString(locale(), {
+          year: 'numeric', month: 'short', day: 'numeric'
+        });
+      }
+
+      function showCreateError(message) {
+        reveal.hidden = false;
+        revealValue.textContent = '';
+        var note = reveal.querySelector('.note');
+        note.textContent = message;
+        note.classList.add('form-error');
+      }
+
+      function renderKeys(keys) {
+        rows.textContent = '';
+        count.textContent = keys.length;
+
+        if (!keys.length) {
+          table.hidden = true;
+          empty.hidden = false;
+          countLabel.textContent = t('No API keys yet');
+          return;
+        }
+
+        table.hidden = false;
+        empty.hidden = true;
+        countLabel.textContent = t('Active keys');
+
+        keys.forEach(function (key) {
+          var tr = document.createElement('tr');
+
+          var tdName = document.createElement('td');
+          tdName.textContent = key.name;
+
+          var tdKey = document.createElement('td');
+          tdKey.className = 'mono';
+          tdKey.textContent = key.prefix + '••••••••••••';
+
+          var tdCreated = document.createElement('td');
+          tdCreated.textContent = formatDate(key.created_at);
+
+          var tdUsed = document.createElement('td');
+          tdUsed.textContent = formatDate(key.last_used_at);
+
+          var tdActions = document.createElement('td');
+          var revoke = document.createElement('button');
+          revoke.type = 'button';
+          revoke.className = 'btn outline sm';
+          revoke.textContent = t('Revoke');
+          revoke.addEventListener('click', function () {
+            if (!window.confirm(t('Revoke this API key? Applications using it will stop working.'))) return;
+            revoke.disabled = true;
+            window.TAIAuth.revokeKey(key.id)
+              .then(load)
+              .catch(function (err) { window.alert(err.message); revoke.disabled = false; });
+          });
+          tdActions.appendChild(revoke);
+
+          tr.appendChild(tdName);
+          tr.appendChild(tdKey);
+          tr.appendChild(tdCreated);
+          tr.appendChild(tdUsed);
+          tr.appendChild(tdActions);
+          rows.appendChild(tr);
+        });
+      }
+
+      function signedOut() {
+        table.hidden = true;
+        empty.hidden = true;
+        authNote.hidden = false;
+        createBtn.disabled = true;
+        count.textContent = '—';
+        countLabel.textContent = t('Sign in to view');
+        ['usageRequests', 'usageTokens', 'usageBalance'].forEach(function (id) {
+          var el = document.getElementById(id);
+          if (el) el.textContent = '—';
+        });
+        var left = document.getElementById('freeTokensLeft');
+        if (left) left.textContent = t('Sign in to view');
+      }
+
+      function renderUsage(u) {
+        document.getElementById('usageRequests').textContent =
+          u.requests_this_month.toLocaleString(locale());
+        document.getElementById('usageTokens').textContent =
+          u.tokens_this_month.toLocaleString(locale());
+        document.getElementById('usageBalance').textContent = u.balance_cny.toFixed(2);
+
+        document.getElementById('usagePeriod').textContent =
+          t('This month') + ' · ' + u.period;
+
+        document.getElementById('freeTokensLeft').textContent =
+          t('Free tokens left') + ': ' + u.free_tokens.remaining.toLocaleString(locale());
+
+        // Show the amount accrued this month next to the balance.
+        document.getElementById('usageCost').textContent =
+          t('Current balance') + ' · ' + t('Spent this month') + ' ¥' +
+          u.cost_cny_this_month.toFixed(u.cost_cny_this_month < 1 ? 3 : 2);
+      }
+
+      function loadUsage() {
+        return window.TAIAuth.request('GET', '/usage')
+          .then(renderUsage)
+          .catch(function (err) { if (err.status !== 401) window.alert(err.message); });
+      }
+
+      function load() {
+        return window.TAIAuth.listKeys()
+          .then(renderKeys)
+          .catch(function (err) {
+            if (err.status === 401) signedOut();
+            else window.alert(err.message);
+          })
+          .then(loadUsage);
+      }
+
+      createBtn.addEventListener('click', function () {
+        var name = window.prompt(t('Name this key'), 'Production Key');
+        if (name === null) return;
+        createBtn.disabled = true;
+        window.TAIAuth.createKey(name || 'Default key')
+          .then(function (created) {
+            reveal.hidden = false;
+            revealValue.textContent = created.key;
+            var note = reveal.querySelector('.note');
+            note.classList.remove('form-error');
+            note.textContent = t('Copy this key now — it will not be shown again.');
+            return load();
+          })
+          .catch(function (err) {
+            if (err.status === 401) { signedOut(); window.TAIAuth.openModal('login'); }
+            else showCreateError(err.message);
+          })
+          .then(function () { createBtn.disabled = false; });
+      });
+
+      window.TAIAuth.onChange(function (user) {
+        createBtn.disabled = !user;
+        if (user) load(); else signedOut();
+      });
+    })();
+  </script>
 </body>
 </html>

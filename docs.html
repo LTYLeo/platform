@@ -5,122 +5,125 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TAI Developer Platform – Build with Intelligence</title>
   <link rel="icon" href="icon.jpg" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/framer-motion@10.16.3/dist/framer-motion.umd.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Locale must be decided before first paint so Chinese users never see an English flash -->
+  <script>
+    (function () {
+      try {
+        var lang = 'en';
+        var fromUrl = /[?&]lang=(en|zh)(?![a-z])/i.exec(location.search);
+        var saved = localStorage.getItem('tai-lang');
+        if (fromUrl) {
+          lang = fromUrl[1].toLowerCase();
+        } else if (saved === 'zh' || saved === 'en') {
+          lang = saved;
+        } else {
+          var list = (navigator.languages && navigator.languages.length)
+            ? navigator.languages : [navigator.language || 'en'];
+          for (var i = 0; i < list.length; i++) {
+            var l = String(list[i]).toLowerCase();
+            if (l.indexOf('zh') === 0) { lang = 'zh'; break; }
+            if (l.indexOf('en') === 0) { lang = 'en'; break; }
+          }
+        }
+        document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh-CN' : 'en');
+        if (lang !== 'en') {
+          document.documentElement.className += ' i18n-pending';
+          setTimeout(function () {
+            document.documentElement.classList.remove('i18n-pending');
+          }, 2000);
+        }
+      } catch (e) { /* private mode / no storage */ }
+    })();
+  </script>
+  <link rel="stylesheet" href="theme.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <style>
-    .gradient-bg {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-    .card-hover {
-      transition: all 0.3s ease;
-    }
-    .card-hover:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-    }
-    .sidebar {
-      transition: all 0.3s ease;
-    }
-    .chat-bubble-user {
-      background-color: #3b82f6;
-      color: white;
-      border-radius: 18px 18px 4px 18px;
-      padding: 12px 16px;
-      margin: 8px 0;
-      max-width: 80%;
-      align-self: flex-end;
-    }
-    .chat-bubble-ai {
-      background-color: #f1f5f9;
-      color: #334155;
-      border-radius: 18px 18px 18px 4px;
-      padding: 12px 16px;
-      margin: 8px 0;
-      max-width: 80%;
-      align-self: flex-start;
-    }
-    .code-block {
-      background-color: #1e293b;
-      color: #e2e8f0;
-      border-radius: 8px;
-      padding: 16px;
-      overflow-x: auto;
-      font-family: 'Courier New', monospace;
-      margin: 12px 0;
-    }
+    /* page-specific: offset anchor targets so the sticky header never covers them */
+    .doc-body [id] { scroll-margin-top: 100px; }
   </style>
 </head>
 <body>
-  <!-- 导航栏 -->
-  
-  <!-- 文档内容 -->
-  <div class="flex pt-16">
-    <!-- 文档侧边栏 -->
-    <div class="w-64 bg-white border-r border-gray-200 p-4 h-screen overflow-y-auto sticky top-16">
-      <h3 class="font-semibold text-gray-700 mb-4">Documentation</h3>
-      
-      <div class="mb-6">
-        <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">Getting Started</h4>
-        <ul class="space-y-1">
-          <li><a href="#" class="text-blue-600 hover:text-blue-800">Introduction</a></li>
-          <li><a href="#" class="text-gray-700 hover:text-blue-600">Quick Start</a></li>
-          <li><a href="#" class="text-gray-700 hover:text-blue-600">Authentication</a></li>
-          <li><a href="#" class="text-gray-700 hover:text-blue-600">API Keys</a></li>
-        </ul>
-      </div>
-      
-      <div class="mb-6">
-        <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">API Reference</h4>
-        <ul class="space-y-1">
-          <li><a href="#" class="text-gray-700 hover:text-blue-600">Chat Completions</a></li>
-          <li><a href="#" class="text-gray-700 hover:text-blue-600">Models</a></li>
-          <li><a href="#" class="text-gray-700 hover:text-blue-600">Embeddings</a></li>
-          <li><a href="#" class="text-gray-700 hover:text-blue-600">Files</a></li>
-        </ul>
-      </div>
-      
-      <div class="mb-6">
-        <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">Guides</h4>
-        <ul class="space-y-1">
-          <li><a href="#" class="text-gray-700 hover:text-blue-600">Best Practices</a></li>
-          <li><a href="#" class="text-gray-700 hover:text-blue-600">Error Handling</a></li>
-          <li><a href="#" class="text-gray-700 hover:text-blue-600">Rate Limits</a></li>
-          <li><a href="#" class="text-gray-700 hover:text-blue-600">Migration Guide</a></li>
-        </ul>
-      </div>
-    </div>
-    
-    <!-- 主文档内容 -->
-    <div class="flex-1 p-8">
-      <div class="max-w-3xl mx-auto">
-        <h1 class="text-3xl font-bold text-gray-800 mb-6">Getting Started with TAI API</h1>
-        
-        <div class="prose max-w-none">
-          <p class="text-lg text-gray-700 mb-6">
+  <!-- Navbar -->
+  <header class="container site-header">
+    <a class="logo" href="index.html">
+      <span class="mark"><img src="icon.jpg" alt="TAI Research Logo" /></span>
+      <span>
+        <span class="logo-name">TAI Developer Platform</span>
+        <small>Build with Intelligence</small>
+      </span>
+    </a>
+    <nav class="site-nav">
+      <a href="index.html">Home</a>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="playground.html">Playground</a>
+      <a href="docs.html" class="active">Docs</a>
+      <a href="pricing.html">Pricing</a>
+      <a href="#" id="loginBtn" class="btn sm">Login</a>
+    </nav>
+  </header>
+
+  <main class="container-wide">
+    <!-- Documentation -->
+    <section class="section-plain" style="padding-top:32px;">
+      <div class="docs-layout">
+        <!-- Sidebar -->
+        <aside class="docs-sidebar">
+          <h3>Documentation</h3>
+
+          <h4>Getting Started</h4>
+          <ul>
+            <li><a href="#introduction" class="active">Introduction</a></li>
+            <li><a href="#">Quick Start</a></li>
+            <li><a href="#authentication">Authentication</a></li>
+            <li><a href="#">API Keys</a></li>
+          </ul>
+
+          <h4>API Reference</h4>
+          <ul>
+            <li><a href="#making-your-first-request">Chat Completions</a></li>
+            <li><a href="#available-models">Models</a></li>
+            <li><a href="#">Embeddings</a></li>
+            <li><a href="#">Files</a></li>
+          </ul>
+
+          <h4>Guides</h4>
+          <ul>
+            <li><a href="#">Best Practices</a></li>
+            <li><a href="#">Error Handling</a></li>
+            <li><a href="#">Rate Limits</a></li>
+            <li><a href="#">Migration Guide</a></li>
+          </ul>
+        </aside>
+
+        <!-- Article -->
+        <article class="doc-body" id="introduction">
+          <h1>Getting Started with TAI API</h1>
+
+          <p class="lead">
             Welcome to the TAI Developer Platform! This guide will help you get started with our API and integrate TAI models into your applications.
           </p>
-          
-          <h2 class="text-2xl font-semibold text-gray-800 mt-8 mb-4">Authentication</h2>
-          <p class="mb-4">
-            All API requests require authentication using your API key. You can find your API keys in the <a href="dashboard.html" class="text-blue-600 hover:underline">Dashboard</a>.
+
+          <h2 id="authentication">Authentication</h2>
+          <p>
+            All API requests require authentication using your API key. You can find your API keys in the <a href="dashboard.html">Dashboard</a>.
           </p>
-          
+
           <div class="code-block">
-            <pre>import tai
+<pre>import tai
 
 # Initialize the client with your API key
 client = tai.Client(api_key="YOUR_API_KEY")</pre>
           </div>
-          
-          <h2 class="text-2xl font-semibold text-gray-800 mt-8 mb-4">Making Your First Request</h2>
-          <p class="mb-4">
+
+          <h2 id="making-your-first-request">Making Your First Request</h2>
+          <p>
             Here's a simple example of how to use the chat completions endpoint:
           </p>
-          
+
           <div class="code-block">
-            <pre>response = client.chat.completions.create(
-  model="gtc-2-turbo",
+<pre>response = client.chat.completions.create(
+  model="gtc-2.5-mini",
   messages=[
     {"role": "system", "content": "You are a helpful assistant."},
     {"role": "user", "content": "Hello, how are you?"}
@@ -129,59 +132,140 @@ client = tai.Client(api_key="YOUR_API_KEY")</pre>
 
 print(response.choices[0].message.content)</pre>
           </div>
-          
-          <h2 class="text-2xl font-semibold text-gray-800 mt-8 mb-4">Available Models</h2>
-          <p class="mb-4">
-            TAI offers several models optimized for different use cases:
+
+          <h2 id="available-models">Available Models</h2>
+          <p>
+            Pass one of the model IDs below as the <code class="code-inline">model</code> parameter.
+            GTC-2.5 mini and TFMF are live; the companion models are still in LoRA training.
           </p>
-          
-          <div class="bg-white border border-gray-200 rounded-lg overflow-hidden mb-6">
-            <table class="w-full">
-              <thead class="bg-gray-50">
+
+          <div class="table-wrap">
+            <table class="styled-table">
+              <thead>
                 <tr>
-                  <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Model</th>
-                  <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Description</th>
-                  <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Best For</th>
+                  <th>Model</th>
+                  <th>Description</th>
+                  <th>Best For</th>
+                  <th>Status</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-gray-200">
+              <tbody>
                 <tr>
-                  <td class="px-4 py-3 text-sm">GTC-2 Turbo</td>
-                  <td class="px-4 py-3 text-sm">Our most powerful general-purpose model</td>
-                  <td class="px-4 py-3 text-sm">Complex reasoning, code generation</td>
+                  <td>
+                    <strong>GTC-2.5 mini</strong><br />
+                    <code class="code-inline">gtc-2.5-mini</code>
+                  </td>
+                  <td>Lightweight 64M base model</td>
+                  <td>Basic chat, knowledge Q&amp;A, simple text generation, edge deployment</td>
+                  <td><span class="badge green">Live</span></td>
                 </tr>
                 <tr>
-                  <td class="px-4 py-3 text-sm">Giggle (Teens)</td>
-                  <td class="px-4 py-3 text-sm">Fun, engaging personality</td>
-                  <td class="px-4 py-3 text-sm">Entertainment, casual conversation</td>
+                  <td>
+                    <strong>TFMF</strong><br />
+                    <code class="code-inline">tfmf</code>
+                  </td>
+                  <td>General foundation model on Qwen 3.5-4B (INT8)</td>
+                  <td>General chat, instruction following, vertical-domain LoRA adaptation</td>
+                  <td><span class="badge green">Live</span></td>
                 </tr>
                 <tr>
-                  <td class="px-4 py-3 text-sm">Bro (Teens)</td>
-                  <td class="px-4 py-3 text-sm">Friendly, supportive companion</td>
-                  <td class="px-4 py-3 text-sm">Mental health, emotional support</td>
+                  <td>
+                    <strong>Giggle</strong><br />
+                    <code class="code-inline">giggle</code>
+                  </td>
+                  <td>General companion model (TFMF + LoRA)</td>
+                  <td>Casual chat, playful interaction, everyday listening</td>
+                  <td><span class="badge amber">In training</span></td>
                 </tr>
                 <tr>
-                  <td class="px-4 py-3 text-sm">Sweetie (Teens)</td>
-                  <td class="px-4 py-3 text-sm">Warm, caring personality</td>
-                  <td class="px-4 py-3 text-sm">Companionship, empathetic responses</td>
+                  <td>
+                    <strong>Bro</strong><br />
+                    <code class="code-inline">bro</code>
+                  </td>
+                  <td>Companion model (TFMF + LoRA)</td>
+                  <td>Gaming, sports, study and tech conversation</td>
+                  <td><span class="badge amber">In training</span></td>
+                </tr>
+                <tr>
+                  <td>
+                    <strong>Sweetie</strong><br />
+                    <code class="code-inline">sweetie</code>
+                  </td>
+                  <td>Companion model (TFMF + LoRA)</td>
+                  <td>Emotional support, relationships, everyday sharing</td>
+                  <td><span class="badge amber">In training</span></td>
                 </tr>
               </tbody>
             </table>
           </div>
-          
-          <h2 class="text-2xl font-semibold text-gray-800 mt-8 mb-4">Next Steps</h2>
-          <p class="mb-4">
+
+          <h2 id="next-steps">Next Steps</h2>
+          <p>
             Now that you've made your first API call, here are some resources to continue your journey:
           </p>
-          <ul class="list-disc pl-6 mb-6 text-gray-700">
-            <li class="mb-2">Explore the <a href="#" class="text-blue-600 hover:underline">Playground</a> to test different models and parameters</li>
-            <li class="mb-2">Check out our <a href="#" class="text-blue-600 hover:underline">API Reference</a> for detailed endpoint documentation</li>
-            <li class="mb-2">Read our <a href="#" class="text-blue-600 hover:underline">Best Practices</a> guide for tips on optimizing your usage</li>
-            <li>Join our <a href="#" class="text-blue-600 hover:underline">Community</a> to connect with other developers</li>
+          <ul>
+            <li>Explore the <a href="#">Playground</a> to test different models and parameters</li>
+            <li>Check out our <a href="#">API Reference</a> for detailed endpoint documentation</li>
+            <li>Read our <a href="#">Best Practices</a> guide for tips on optimizing your usage</li>
+            <li>Join our <a href="#">Community</a> to connect with other developers</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container-wide">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-brand">
+            <img src="icon.jpg" alt="TAI Research Logo" />
+            <span>TAI Developer Platform</span>
+          </div>
+          <p class="muted">Building the Future of Creation with AI.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Platform</h4>
+          <ul>
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="playground.html">Playground</a></li>
+            <li><a href="docs.html">Documentation</a></li>
+            <li><a href="pricing.html">Pricing</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Resources</h4>
+          <ul>
+            <li><a href="community.html">Community</a></li>
+            <li><a href="support.html">Support</a></li>
+            <li><a href="status.html">Status</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="about.html">About</a></li>
+            <li><a href="careers.html">Careers</a></li>
+            <li><a href="contact.html">Contact</a></li>
+            <li><a href="privacy.html">Privacy Policy</a></li>
           </ul>
         </div>
       </div>
+      <div class="footer-bottom">
+        <div>© TAI Research. All rights reserved.</div>
+        <div class="footer-social">
+          <a href="https://github.com/LTYLeo" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://huggingface.co/TAI-Research" target="_blank" rel="noopener">Hugging Face</a>
+          <a href="https://space.bilibili.com/88158150" target="_blank" rel="noopener">Bilibili</a>
+        </div>
+      </div>
     </div>
-  </div>
+  </footer>
+  <!-- i18n: English lives in the markup, locales/zh.js supplies the Chinese strings -->
+  <script src="config.js"></script>
+  <script src="locales/zh.js"></script>
+  <script src="i18n.js"></script>
+  <script src="auth.js"></script>
 </body>
 </html>
