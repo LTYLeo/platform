@@ -1,0 +1,15 @@
+# GitHub Pages builds this repository with Jekyll, from the repository root
+# (Settings -> Pages -> Deploy from a branch: main / root).
+#
+# The repository also contains the FastAPI backend. Jekyll publishes everything
+# it does not exclude, so without this file the backend source would be
+# downloadable at https://<user>.github.io/<repo>/server/main.py — and, if the
+# SQLite file were ever committed by accident, the entire user database with it.
+#
+# Keep the backend out of the published site entirely.
+exclude:
+  - server
+  - vendor
+  - Gemfile
+  - Gemfile.lock
+  - "*.md"
