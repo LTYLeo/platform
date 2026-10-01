@@ -369,6 +369,35 @@ export TAI_INTERNAL_TOKEN="<same secret as the platform>"
 * **Entitlement lookups are cached for 60 s** because `/generate` is hot; a
   lookup per generation would put the Pi on the critical path of every message.
 
+## Running it behind a tunnel
+
+The dashboard is served from GitHub Pages while the API lives behind a tunnel,
+so the session cookie is cross-site. Four settings matter, and getting any of
+them wrong fails in a way that looks like the server is down:
+
+```bash
+export TAI_INTERNAL_TOKEN=...        # shared secret; Sigma uses the internal API
+export TAI_ALLOWED_ORIGINS=https://ltyleo.github.io
+export TAI_COOKIE_SAMESITE=none      # cross-site cookie; requires Secure
+export TAI_COOKIE_SECURE=true
+```
+
+* **SameSite=Lax drops the cookie silently.** The login answers 200, the browser
+  discards the session, and every later call looks like a network failure.
+* **Credentialed CORS needs an explicit origin list.** `supports_credentials`
+  and `Access-Control-Allow-Origin: *` are mutually exclusive by specification,
+  which is why the allowed origins must be listed rather than wildcarded.
+* **ngrok's free tier serves an HTML warning page** to browser-looking requests,
+  so each one must send `ngrok-skip-browser-warning` or the JSON parse fails and
+  the client reports the server as offline.
+
+### One public entry, two backends
+
+ngrok's free tier allows a single tunnel, so Sigma relays `/api/*` to the
+platform and serves everything else itself. Sigma's routes carry no `/api`
+prefix, so the two cannot collide. This is also the shape the deployment wants
+long term: one entry point that routes to whoever serves the request.
+
 ## Not built yet
 
 * **Sigma does not yet show the plan in its UI.** The backend routes
