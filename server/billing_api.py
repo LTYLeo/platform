@@ -21,7 +21,7 @@ import sqlite3
 from fastapi import APIRouter, Depends, Header, Request, Response, status
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from server import billing, db
+from server import billing, db, security
 from server.deps import current_user, fail, require_admin
 
 billing_router = APIRouter(prefix="/api/billing", tags=["billing"])
@@ -129,6 +129,22 @@ class InternalRedeemBody(BaseModel):
 
     email: str = Field(min_length=3, max_length=254)
     code: str = Field(min_length=4, max_length=64)
+
+
+class CredentialsBody(BaseModel):
+    """Email and password, as typed. Email is the identity: usernames collide."""
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    email: str = Field(min_length=3, max_length=254)
+    password: str = Field(min_length=8, max_length=200)
+
+
+class RegisterBody(CredentialsBody):
+    name: str = Field(default="", max_length=80)
+
+
+class SetPasswordBody(CredentialsBody):
+    pass
 
 
 class SetPlanBody(BaseModel):
@@ -500,6 +516,115 @@ def internal_entitlements_by_query(
 ):
     """Same as the path form; convenient for a simple client."""
     return internal_entitlements_by_email(email, conn, None)
+
+
+# --------------------------------------------------------------------------- #
+# Identity (Sigma delegates login here)
+# --------------------------------------------------------------------------- #
+# Sigma keeps no password of its own. It forwards the email and password, the
+# platform decides, and Sigma stores only the resulting session. That makes the
+# platform the single place a password lives, so there is nothing to keep in
+# sync and no second copy to drift.
+#
+# Email is the identifier on purpose: usernames collide, emails do not.
+
+@internal_router.post("/verify")
+def internal_verify(
+    body: CredentialsBody,
+    conn: sqlite3.Connection = Depends(db.get_db),
+    _: None = Depends(require_internal),
+):
+    """Check an email and password.
+
+    404 means "no such account" and 401 means "wrong password" - kept distinct
+    so Sigma can run its one-time migration only for genuinely absent accounts.
+    """
+    row = _user_by_email(conn, body.email)
+    if row is None:
+        raise fail(status.HTTP_404_NOT_FOUND, "no_platform_account", "No platform account")
+    if not row["is_active"]:
+        raise fail(status.HTTP_403_FORBIDDEN, "account_disabled", "This account is disabled")
+    if not security.verify_password(body.password, row["password_hash"]):
+        raise fail(status.HTTP_401_UNAUTHORIZED, "bad_credentials", "Incorrect password")
+    return {
+        "object": "identity",
+        "user_id": int(row["id"]),
+        "email": row["email"],
+        "name": row["name"],
+        "entitlements": billing.entitlements(conn, int(row["id"])),
+    }
+
+
+@internal_router.post("/register")
+def internal_register(
+    body: RegisterBody,
+    conn: sqlite3.Connection = Depends(db.get_db),
+    _: None = Depends(require_internal),
+):
+    """Create an account (or claim an existing one) with the given password.
+
+    Used both for sign-up and for migrating an account that until now only
+    existed on the Sigma side.
+    """
+    row = _user_by_email(conn, body.email)
+    now = db.iso(db.utcnow())
+
+    if row is not None:
+        # Existing account: this is a migration, so set the password rather than
+        # refusing. Sigma only calls it after verifying the old password locally.
+        if not security.verify_password(body.password, row["password_hash"]):
+            conn.execute(
+                "UPDATE users SET password_hash = ? WHERE id = ?",
+                (security.hash_password(body.password), row["id"]),
+            )
+            conn.execute("DELETE FROM sessions WHERE user_id = ?", (row["id"],))
+            billing.audit(conn, None, "identity.password_migrated", {"user_id": int(row["id"])})
+            conn.commit()
+        user_id = int(row["id"])
+    else:
+        cur = conn.execute(
+            "INSERT INTO users (email, name, password_hash, created_at) VALUES (?,?,?,?)",
+            (body.email, body.name or body.email.split("@")[0],
+             security.hash_password(body.password), now),
+        )
+        user_id = int(cur.lastrowid)
+        conn.execute(
+            "INSERT OR IGNORE INTO subscriptions (user_id, plan, expires_at, updated_at) "
+            "VALUES (?, 'free', NULL, ?)",
+            (user_id, now),
+        )
+        billing.audit(conn, None, "identity.registered", {"user_id": user_id, "email": body.email})
+        conn.commit()
+
+    fresh = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    return {
+        "object": "identity",
+        "user_id": user_id,
+        "email": fresh["email"],
+        "name": fresh["name"],
+        "created": row is None,
+        "entitlements": billing.entitlements(conn, user_id),
+    }
+
+
+@internal_router.post("/set-password")
+def internal_set_password(
+    body: SetPasswordBody,
+    conn: sqlite3.Connection = Depends(db.get_db),
+    _: None = Depends(require_internal),
+):
+    """Set a password outright. Staff action, or an authenticated reset flow."""
+    row = _user_by_email(conn, body.email)
+    if row is None:
+        raise fail(status.HTTP_404_NOT_FOUND, "no_platform_account", "No platform account")
+    conn.execute(
+        "UPDATE users SET password_hash = ? WHERE id = ?",
+        (security.hash_password(body.password), row["id"]),
+    )
+    conn.execute("DELETE FROM sessions WHERE user_id = ?", (row["id"],))
+    billing.audit(conn, None, "identity.password_set", {"user_id": int(row["id"])})
+    conn.commit()
+    return {"status": "ok", "user_id": int(row["id"])}
 
 
 # --------------------------------------------------------------------------- #
