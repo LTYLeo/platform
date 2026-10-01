@@ -33,9 +33,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from server import db, pricing, security
+from server import billing, db, pricing, security
 from server.api_v1 import router as api_v1_router
-from server.deps import client_ip, fail, require_api_key  # noqa: F401 - re-exported
+from server.billing_api import (
+    admin_router,
+    billing_router,
+    internal_router,
+    payments_router,
+)
+from server.deps import (  # noqa: F401 - re-exported for existing callers
+    client_ip,
+    current_user,
+    fail,
+    require_admin,
+    require_api_key,
+)
 from server.schemas import (
     ApiKeyOut,
     CreateKeyRequest,
@@ -130,6 +142,10 @@ async def block_private_paths(request: Request, call_next):
 # including GET /api/v1/models. Include it before the static mount so /api/*
 # always wins over the site.
 app.include_router(api_v1_router)
+app.include_router(billing_router)
+app.include_router(admin_router)
+app.include_router(internal_router)
+app.include_router(payments_router)
 
 
 # --------------------------------------------------------------------------- #
@@ -196,28 +212,6 @@ def row_to_user(row: sqlite3.Row) -> UserOut:
     return UserOut(
         id=row["id"], email=row["email"], name=row["name"], created_at=row["created_at"]
     )
-
-
-def current_user(
-    conn: sqlite3.Connection = Depends(db.get_db),
-    tai_session: str | None = Cookie(default=None),
-) -> sqlite3.Row:
-    """Resolve the session cookie to a user row, or raise 401."""
-    if not tai_session:
-        raise fail(status.HTTP_401_UNAUTHORIZED, "not_authenticated", "No active session")
-
-    row = conn.execute(
-        """
-        SELECT u.* FROM sessions s
-        JOIN users u ON u.id = s.user_id
-        WHERE s.token_hash = ? AND s.expires_at > ? AND u.is_active = 1
-        """,
-        (security.token_fingerprint(tai_session), db.iso(db.utcnow())),
-    ).fetchone()
-
-    if row is None:
-        raise fail(status.HTTP_401_UNAUTHORIZED, "not_authenticated", "Session expired")
-    return row
 
 
 # --------------------------------------------------------------------------- #

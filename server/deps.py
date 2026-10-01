@@ -14,7 +14,7 @@ from __future__ import annotations
 import secrets
 import sqlite3
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Cookie, Depends, HTTPException, Request, status
 
 from server import db, pricing, security
 
@@ -38,15 +38,20 @@ def fail(
     code: str,
     message: str,
     param: str | None = None,
+    extra: dict | None = None,
 ) -> HTTPException:
     """An error in the documented ``{code, message, param?}`` shape.
 
     ``param`` is only included when we actually know which field was at fault,
     which is what the contract's optional field is for.
     """
-    detail: dict[str, str] = {"code": code, "message": message}
+    detail: dict = {"code": code, "message": message}
     if param is not None:
         detail["param"] = param
+    if extra:
+        # Extra machine-readable context (balances, limits). Clients that only
+        # know {code, message, param} ignore it, as the contract allows.
+        detail.update(extra)
     return HTTPException(status_code=status_code, detail=detail)
 
 
@@ -127,3 +132,38 @@ def check_model(model_id: str) -> str:
             param="model",
         )
     return model_id
+# --------------------------------------------------------------------------- #
+# Session (cookie) authentication
+# --------------------------------------------------------------------------- #
+
+def current_user(
+    conn: sqlite3.Connection = Depends(db.get_db),
+    tai_session: str | None = Cookie(default=None),
+) -> sqlite3.Row:
+    """Resolve the session cookie to a user row, or raise 401."""
+    if not tai_session:
+        raise fail(status.HTTP_401_UNAUTHORIZED, "not_authenticated", "No active session")
+
+    row = conn.execute(
+        """
+        SELECT u.* FROM sessions s
+        JOIN users u ON u.id = s.user_id
+        WHERE s.token_hash = ? AND s.expires_at > ? AND u.is_active = 1
+        """,
+        (security.token_fingerprint(tai_session), db.iso(db.utcnow())),
+    ).fetchone()
+
+    if row is None:
+        raise fail(status.HTTP_401_UNAUTHORIZED, "not_authenticated", "Session expired")
+    return row
+
+
+def require_admin(user: sqlite3.Row = Depends(current_user)) -> sqlite3.Row:
+    """Session user who is also flagged as staff.
+
+    Admin only ever means staff of this project; there is no way for a normal
+    account to become one without an explicit database change or the CLI.
+    """
+    if not user["is_admin"]:
+        raise fail(status.HTTP_403_FORBIDDEN, "not_admin", "Administrator access required")
+    return user

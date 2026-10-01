@@ -249,15 +249,94 @@ implementation:
   Ollama (`http://127.0.0.1:11434/v1`) or LM Studio, and the dashboard starts
   reporting genuine token counts and costs.
 
+## Billing
+
+Two consumption models, one payment layer.
+
+| | Sigma | Developer Platform API |
+|---|---|---|
+| model | subscription (free / pro) | prepaid usage |
+| unit | time | tokens |
+| state | `subscriptions` | `credit_ledger` |
+| gate | plan + daily limit | `db.can_generate()` |
+
+Both start as a `payment_orders` row and end in a fulfilment that either adds
+credit or extends a subscription.
+
+### Why redeem codes exist
+
+Collecting money in China as an individual is the awkward part: a personal QR
+code may not be used for business collection, a merchant account normally needs
+a business licence, and the channels that *do* work for individuals come and go.
+So the money path is split:
+
+```
+money arrives however it arrives  ->  a code is issued  ->  the user redeems it
+```
+
+Adding or switching a payment channel therefore only changes *how a code is
+issued*, never product code. `ManualProvider` needs no third party at all: an
+admin confirms the transfer and the code or credit is granted, which also covers
+bank transfers, cash, and "my friend paid for me".
+
+### Endpoints
+
+| Method | Path | Who | Purpose |
+|---|---|---|---|
+| `GET` | `/api/billing/entitlements` | user | plan, balance, free tokens, can-generate |
+| `GET`/`POST` | `/api/billing/orders` | user | list / create a top-up or plan order |
+| `POST` | `/api/billing/orders/{id}/intent` | user | how to pay (409 if the channel is unconfigured) |
+| `POST` | `/api/billing/redeem` | user | redeem a code |
+| `GET` | `/api/admin/providers` | admin | which channels are usable right now |
+| `GET` | `/api/admin/orders` · `POST .../mark-paid` | admin | confirm a transfer arrived |
+| `POST`/`GET` | `/api/admin/codes` | admin | mint / list codes |
+| `GET` | `/api/admin/users` | admin | accounts with plan + balance |
+| `POST` | `/api/admin/users/{id}/credit` · `/plan` | admin | grant credit / set plan |
+| `GET` | `/api/admin/audit` | admin | who changed what |
+| `GET` | `/api/internal/entitlements/{user_id}` | Sigma | shared-secret, so Sigma has no second copy of the plan |
+| `POST` | `/api/payments/callback/{provider}` | channel | signed notification, idempotent |
+
+### Staff CLI
+
+Admin rights are a database flag with no self-service path — being first to
+register must not hand someone the platform.
+
+```bash
+python3 -m server.admin_cli promote you@example.com
+python3 -m server.admin_cli gen-codes api_credit 10 --amount 20
+python3 -m server.admin_cli gen-codes sigma_pro 5 --months 1
+python3 -m server.admin_cli orders --status pending
+python3 -m server.admin_cli mark-paid ord_xxxx
+python3 -m server.admin_cli users
+```
+
+### Safety properties
+
+* **Replaying a payment callback cannot double-credit.** `provider_trade_no` is
+  UNIQUE and `fulfil_order` short-circuits on an already-paid order. Channels
+  retry aggressively, so this is load-bearing.
+* **Redeeming twice cannot double-credit.** The redemption is a conditional
+  `UPDATE ... WHERE redeemed_at IS NULL`, so a race has exactly one winner.
+* **The free allowance is consumed before money.** A call is free while any of
+  the 5,000 free tokens remain; the first call that starts after they run out is
+  charged in full. Simple on purpose rather than prorating inside one call.
+* **The internal API is closed when unconfigured**, not open.
+* **Codes cannot be misread.** The alphabet omits `I L O 0 1`; input is
+  normalised, so `tai - jcam - 467b - 236r` and `TAIJCAM467B236R` both work.
+
 ## Not built yet
 
-* **Payments.** `credit_ledger` exists and `balance_cny` sums it, but nothing
-  writes to it, so every account honestly reports ¥0.00. `insufficient_balance`
-  is defined but not enforced.
+* **Real payment channels.** `ManualProvider` works today. Afdian is written but
+  needs `TAI_AFDIAN_TOKEN` + `TAI_AFDIAN_USER_ID`; WeChat Pay Native is
+  deliberately a stub until signing credentials exist, because ordering a
+  payment without them produces QR codes nobody can scan.
+* **Invoices.** A Chinese VAT invoice needs tax registration, which needs a
+  business licence. Until then only a receipt can be issued.
 * **Per-key rate limits.** `rate_limited` is defined; only login attempts are
-  throttled today (8 failures / 15 min / email+IP).
+  throttled today (8 failures / 15 min / email+IP). Balance is enforced, rate is
+  not.
+* **Sigma integration.** The internal entitlements endpoint is ready and tested;
+  Sigma does not call it yet, so Sigma's `users.json` still holds its own `role`.
 * **Token counting is exact only for `openai_compatible`**, which takes the
   upstream's reported usage. The stub estimates with `ceil(len/4)` and marks the
   result `"estimated": true`.
-
-

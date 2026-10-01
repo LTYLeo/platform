@@ -93,6 +93,65 @@ CREATE TABLE IF NOT EXISTS credit_ledger (
 CREATE INDEX IF NOT EXISTS idx_ledger_user ON credit_ledger (user_id);
 
 -- ---------------------------------------------------------------------------
+-- Billing
+-- ---------------------------------------------------------------------------
+
+-- One row per purchase attempt, whatever the payment channel. This is the only
+-- place that records "money was supposed to arrive", so the manual channel,
+-- Afdian and WeChat Pay all write here and nothing else needs to care.
+CREATE TABLE IF NOT EXISTS payment_orders (
+    id                TEXT PRIMARY KEY,
+    user_id           INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    purpose           TEXT    NOT NULL,           -- 'api_credit' | 'sigma_pro'
+    amount_cny        REAL    NOT NULL,
+    months            INTEGER NOT NULL DEFAULT 0, -- for 'sigma_pro'
+    provider          TEXT    NOT NULL,           -- 'manual' | 'afdian' | 'wechat'
+    provider_trade_no TEXT    UNIQUE,             -- UNIQUE => replayed callbacks are a no-op
+    status            TEXT    NOT NULL,           -- 'pending' | 'paid' | 'failed' | 'refunded'
+    created_at        TEXT    NOT NULL,
+    paid_at           TEXT,
+    payload_json      TEXT                        -- raw callback, kept for disputes
+);
+CREATE INDEX IF NOT EXISTS idx_orders_user   ON payment_orders (user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON payment_orders (status);
+
+-- Redeemable codes. Their whole point is to decouple "how the money was
+-- collected" (WeChat transfer, Afdian, cash, a service provider) from "what the
+-- user gets", so changing payment channel never touches product code.
+CREATE TABLE IF NOT EXISTS redeem_codes (
+    code         TEXT PRIMARY KEY,
+    grants_json  TEXT    NOT NULL,                -- {"kind":"api_credit","amount_cny":50}
+    note         TEXT,
+    batch_id     TEXT,                            -- groups codes minted in one go
+    created_by   INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at   TEXT    NOT NULL,
+    expires_at   TEXT,
+    redeemed_at  TEXT,
+    redeemed_by  INTEGER REFERENCES users(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS idx_codes_batch    ON redeem_codes (batch_id);
+CREATE INDEX IF NOT EXISTS idx_codes_redeemed ON redeem_codes (redeemed_by, redeemed_at);
+
+-- Sigma subscriptions (free / pro). Kept here so there is exactly one account
+-- and one billing authority; Sigma asks the platform what a user is entitled to.
+CREATE TABLE IF NOT EXISTS subscriptions (
+    user_id    INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    plan       TEXT NOT NULL DEFAULT 'free',      -- 'free' | 'pro'
+    expires_at TEXT,                              -- NULL = never expires (staff)
+    updated_at TEXT NOT NULL
+);
+
+-- Who changed what. Small, but an admin panel that hands out money needs it.
+CREATE TABLE IF NOT EXISTS audit_log (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    actor_id    INTEGER,
+    action      TEXT NOT NULL,
+    detail_json TEXT,
+    created_at  TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_audit_time ON audit_log (created_at);
+
+-- ---------------------------------------------------------------------------
 -- API v1 objects (sdk/API_CONTRACT.md §2-§4). Ids are opaque, type-prefixed
 -- strings rather than integers because they are handed to customers.
 --
@@ -141,6 +200,12 @@ CREATE INDEX IF NOT EXISTS idx_messages_user   ON messages (user_id);
 """
 
 
+# Columns added after the first release. SQLite has no
+# "ALTER TABLE ... ADD COLUMN IF NOT EXISTS", so we inspect and patch on boot.
+_MIGRATIONS: list[tuple[str, str, str]] = [
+    ("users", "is_admin", "INTEGER NOT NULL DEFAULT 0"),
+]
+
 def utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -165,10 +230,23 @@ def connect() -> sqlite3.Connection:
 
 
 def init_db() -> None:
-    """Create the schema if it does not exist yet. Safe to call on every boot."""
+    """Create the schema if it does not exist yet, then patch in new columns.
+
+    ``CREATE TABLE IF NOT EXISTS`` never alters an existing table, so columns
+    added after the first release are applied here. Safe to call on every boot.
+    """
     conn = connect()
     try:
         conn.executescript(SCHEMA)
+        for table, column, definition in _MIGRATIONS:
+            existing = {row["name"] for row in conn.execute(f"PRAGMA table_info({table})")}
+            if column not in existing:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+        conn.execute(
+            "INSERT OR IGNORE INTO subscriptions (user_id, plan, expires_at, updated_at) "
+            "SELECT id, 'free', NULL, ? FROM users",
+            (iso(utcnow()),),
+        )
         conn.commit()
     finally:
         conn.close()
@@ -234,6 +312,76 @@ def month_start() -> str:
     return iso(now.replace(day=1, hour=0, minute=0, second=0, microsecond=0))
 
 
+def account_state(conn: sqlite3.Connection, user_id: int) -> dict:
+    """Balance, the free allowance, and how much of it is gone.
+
+    The free grant is tracked in **tokens**, not money, because it is advertised
+    as "5,000 free tokens". A call is free while any allowance remains; the first
+    call that starts after it is exhausted is charged in full. That boundary is
+    deliberately simple rather than prorating across a single call.
+
+    ``balance_cny`` is the sum of the credit ledger: top-ups are positive,
+    charges are negative.
+    """
+    from server import pricing
+
+    row = conn.execute(
+        """
+        SELECT COALESCE(SUM(input_tokens), 0) + COALESCE(SUM(output_tokens), 0) AS tokens,
+               COALESCE(SUM(cost_cny), 0) AS cost
+        FROM usage_events WHERE user_id = ?
+        """,
+        (user_id,),
+    ).fetchone()
+
+    balance_row = conn.execute(
+        "SELECT COALESCE(SUM(amount_cny), 0) AS balance FROM credit_ledger WHERE user_id = ?",
+        (user_id,),
+    ).fetchone()
+
+    tokens_used = int(row["tokens"])
+    granted = pricing.FREE_TOKENS
+    used_free = min(tokens_used, granted)
+
+    return {
+        "balance_cny": round(float(balance_row["balance"]), 6),
+        "tokens_used": tokens_used,
+        "cost_cny_total": round(float(row["cost"]), 6),
+        "free_granted": granted,
+        "free_used": used_free,
+        "free_remaining": max(0, granted - used_free),
+    }
+
+
+def can_generate(conn: sqlite3.Connection, user_id: int) -> tuple[bool, str, dict]:
+    """May this account generate right now?
+
+    Allowed while the free allowance lasts, or while there is a positive balance.
+    Returns ``(allowed, reason, state)`` so the caller can put real numbers in the
+    402 body instead of a bare "insufficient balance".
+    """
+    state = account_state(conn, user_id)
+    if state["free_remaining"] > 0:
+        return True, "free_allowance", state
+    if state["balance_cny"] > 0:
+        return True, "balance", state
+    return False, "insufficient_balance", state
+
+
+def grant_credit(
+    conn: sqlite3.Connection, user_id: int, amount_cny: float, reason: str
+) -> float:
+    """Add money to an account and return the new balance."""
+    if amount_cny <= 0:
+        raise ValueError("amount_cny must be positive")
+    conn.execute(
+        "INSERT INTO credit_ledger (user_id, amount_cny, reason, created_at) VALUES (?, ?, ?, ?)",
+        (user_id, round(float(amount_cny), 6), reason, iso(utcnow())),
+    )
+    conn.commit()
+    return account_state(conn, user_id)["balance_cny"]
+
+
 def record_usage(
     conn: sqlite3.Connection,
     user_id: int,
@@ -242,25 +390,36 @@ def record_usage(
     input_tokens: int,
     output_tokens: int,
 ) -> float:
-    """Persist one billed call. Returns the cost that was recorded.
+    """Persist one call, charge for it if the free allowance is gone, and return
+    the cost that was recorded.
 
-    This is the single write path for usage; the future inference endpoint calls
-    it once per completion.
+    This is the single write path for usage, so the free-allowance accounting
+    cannot drift: every generation goes through here exactly once.
     """
     from server import pricing  # local import keeps this module dependency-free
 
+    # Snapshot *before* inserting, so the call that exhausts the allowance is
+    # still free and the next one is the first to be charged.
+    free_before = account_state(conn, user_id)["free_remaining"]
+
     cost = pricing.cost_cny(model, input_tokens, output_tokens)
+    now = iso(utcnow())
     conn.execute(
         """
         INSERT INTO usage_events
             (user_id, api_key_id, model, input_tokens, output_tokens, cost_cny, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
-        (user_id, api_key_id, model, input_tokens, output_tokens, cost, iso(utcnow())),
+        (user_id, api_key_id, model, input_tokens, output_tokens, cost, now),
     )
     if api_key_id is not None:
+        conn.execute("UPDATE api_keys SET last_used_at = ? WHERE id = ?", (now, api_key_id))
+
+    if free_before <= 0 and cost > 0:
         conn.execute(
-            "UPDATE api_keys SET last_used_at = ? WHERE id = ?", (iso(utcnow()), api_key_id)
+            "INSERT INTO credit_ledger (user_id, amount_cny, reason, created_at) "
+            "VALUES (?, ?, ?, ?)",
+            (user_id, -round(cost, 6), "usage:%s" % model, now),
         )
     conn.commit()
     return cost

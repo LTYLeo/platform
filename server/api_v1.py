@@ -690,6 +690,28 @@ def _sse_generator(handle: model_backend.StreamHandle, *, stream_id: str, model:
 # Messages (contract §4, §6)
 # --------------------------------------------------------------------------- #
 
+def _ensure_funds(conn: sqlite3.Connection, user_id: int) -> None:
+    """Refuse to generate when the free allowance is gone and the balance is empty.
+
+    Checked before any model work so a broke account costs us nothing, and
+    before the stream opens so the client gets a clean 402 instead of a stream
+    that dies mid-flight.
+    """
+    allowed, reason, state = db.can_generate(conn, user_id)
+    if allowed:
+        return
+    raise fail(
+        status.HTTP_402_PAYMENT_REQUIRED,
+        "insufficient_balance",
+        "Your free tokens are used up and your balance is empty. Top up or redeem "
+        "a code to keep generating.",
+        extra={
+            "balance_cny": state["balance_cny"],
+            "free_tokens_remaining": state["free_remaining"],
+        },
+    )
+
+
 @router.post("/threads/{thread_id}/messages")
 def create_message(
     thread_id: str,
@@ -699,6 +721,7 @@ def create_message(
 ):
     body = _object_body(payload)
     user_id = _user_id(key)
+    _ensure_funds(conn, user_id)
     thread = _get_thread_or_404(conn, thread_id, user_id)
 
     content = _string(body, "content", required=True, min_len=1, max_len=CONTENT_MAX,
@@ -819,6 +842,7 @@ def chat(
 ):
     body = _object_body(payload)
     user_id = _user_id(key)
+    _ensure_funds(conn, user_id)
 
     instructions = ""
     model: str | None = None
