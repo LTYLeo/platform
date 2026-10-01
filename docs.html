@@ -74,69 +74,122 @@
           <h4>Getting Started</h4>
           <ul>
             <li><a href="#introduction" class="active">Introduction</a></li>
-            <li><a href="#">Quick Start</a></li>
             <li><a href="#authentication">Authentication</a></li>
-            <li><a href="#">API Keys</a></li>
+            <li><a href="#first-request">Your First Request</a></li>
           </ul>
 
           <h4>API Reference</h4>
           <ul>
-            <li><a href="#making-your-first-request">Chat Completions</a></li>
+            <li><a href="#first-request">Chat</a></li>
+            <li><a href="#streaming">Streaming</a></li>
+            <li><a href="#assistants">Assistants &amp; Threads</a></li>
             <li><a href="#available-models">Models</a></li>
-            <li><a href="#">Embeddings</a></li>
-            <li><a href="#">Files</a></li>
+            <li><a href="#usage">Usage</a></li>
           </ul>
 
           <h4>Guides</h4>
           <ul>
-            <li><a href="#">Best Practices</a></li>
-            <li><a href="#">Error Handling</a></li>
-            <li><a href="#">Rate Limits</a></li>
-            <li><a href="#">Migration Guide</a></li>
+            <li><a href="#errors">Error Handling</a></li>
+            <li><a href="#errors">Rate Limits</a></li>
+            <li><a href="#introduction">Migration Guide</a></li>
           </ul>
         </aside>
 
         <!-- Article -->
         <article class="doc-body" id="introduction">
-          <h1>Getting Started with TAI API</h1>
+          <h1>Getting Started with the TAI API</h1>
 
           <p class="lead">
-            Welcome to the TAI Developer Platform! This guide will help you get started with our API and integrate TAI models into your applications.
+            The TAI Assistant API is our own shape — not a clone of anyone else's. It gives you
+            assistants, persistent threads, one-off chat, and streaming, authenticated with an
+            API key.
           </p>
 
           <h2 id="authentication">Authentication</h2>
           <p>
-            All API requests require authentication using your API key. You can find your API keys in the <a href="dashboard.html">Dashboard</a>.
+            Create a key in the <a href="dashboard.html">Dashboard</a>, then send it as a bearer
+            token. Keys are shown in full only once, when you create them.
           </p>
 
           <div class="code-block">
-<pre>import tai
-
-# Initialize the client with your API key
-client = tai.Client(api_key="YOUR_API_KEY")</pre>
+<pre>curl https://YOUR_API_HOST/api/v1/models \
+  -H "Authorization: Bearer sk-tai-..."</pre>
           </div>
 
-          <h2 id="making-your-first-request">Making Your First Request</h2>
+          <h2 id="first-request">Your First Request</h2>
+          <p>Install the SDK and make a stateless call:</p>
+
+          <div class="code-block">
+<pre>pip install tai-sdk</pre>
+          </div>
+
+          <div class="code-block">
+<pre>from tai_sdk import TAI
+
+client = TAI(api_key="sk-tai-...")   # base URL is auto-discovered
+
+reply = client.chat.create(
+    model="tfmf",
+    messages=[{"role": "user", "content": "Hello!"}],
+)
+
+print(reply.output.content)
+print(reply.usage.input_tokens, reply.usage.output_tokens, reply.usage.cost_cny)</pre>
+          </div>
+
           <p>
-            Here's a simple example of how to use the chat completions endpoint:
+            Prefer raw HTTP? <code class="code-inline">POST /api/v1/chat</code> takes the same
+            fields as JSON and returns the same shape.
+          </p>
+
+          <h2 id="streaming">Streaming</h2>
+          <p>
+            Pass <code class="code-inline">stream=True</code> and you get server-sent events:
+            <code class="code-inline">message.start</code>, then
+            <code class="code-inline">message.delta</code> per fragment, then
+            <code class="code-inline">message.done</code> carrying the usage.
           </p>
 
           <div class="code-block">
-<pre>response = client.chat.completions.create(
-  model="gtc-2.5-mini",
-  messages=[
-    {"role": "system", "content": "You are a helpful assistant."},
-    {"role": "user", "content": "Hello, how are you?"}
-  ]
+<pre>from tai_sdk.types import MessageDelta, MessageDone
+
+for event in client.chat.stream(
+    model="tfmf",
+    messages=[{"role": "user", "content": "Count to five."}],
+):
+    if isinstance(event, MessageDelta):
+        print(event.delta, end="", flush=True)
+    elif isinstance(event, MessageDone):
+        print("\n", event.usage.output_tokens, "tokens")</pre>
+          </div>
+
+          <h2 id="assistants">Assistants &amp; Threads</h2>
+          <p>
+            An <strong>assistant</strong> stores a model plus system instructions. A
+            <strong>thread</strong> stores the conversation, so you never resend history.
+          </p>
+
+          <div class="code-block">
+<pre>assistant = client.assistants.create(
+    name="Tutor",
+    model="tfmf",
+    instructions="You are a patient tutor. Answer briefly.",
 )
 
-print(response.choices[0].message.content)</pre>
+thread = client.threads.create(assistant_id=assistant.id)
+
+exchange = client.threads.messages.create(
+    thread.id,
+    content="Explain LoRA in two sentences.",
+)
+print(exchange.assistant_message.content)</pre>
           </div>
 
           <h2 id="available-models">Available Models</h2>
           <p>
-            Pass one of the model IDs below as the <code class="code-inline">model</code> parameter.
-            GTC-2.5 mini and TFMF are live; the companion models are still in LoRA training.
+            Pass a model id as <code class="code-inline">model</code>. Call
+            <code class="code-inline">client.models.list()</code> at runtime to get the live list
+            with current prices.
           </p>
 
           <div class="table-wrap">
@@ -145,70 +198,67 @@ print(response.choices[0].message.content)</pre>
                 <tr>
                   <th>Model</th>
                   <th>Description</th>
-                  <th>Best For</th>
+                  <th>Input / Output per 1M</th>
                   <th>Status</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>
-                    <strong>GTC-2.5 mini</strong><br />
-                    <code class="code-inline">gtc-2.5-mini</code>
-                  </td>
+                  <td><strong>GTC-2.5 mini</strong><br /><code class="code-inline">gtc-2.5-mini</code></td>
                   <td>Lightweight 64M base model</td>
-                  <td>Basic chat, knowledge Q&amp;A, simple text generation, edge deployment</td>
+                  <td>¥0.5 / ¥1</td>
                   <td><span class="badge green">Live</span></td>
                 </tr>
                 <tr>
-                  <td>
-                    <strong>TFMF</strong><br />
-                    <code class="code-inline">tfmf</code>
-                  </td>
+                  <td><strong>TFMF</strong><br /><code class="code-inline">tfmf</code></td>
                   <td>General foundation model on Qwen 3.5-4B (INT8)</td>
-                  <td>General chat, instruction following, vertical-domain LoRA adaptation</td>
+                  <td>¥0.5 / ¥3</td>
                   <td><span class="badge green">Live</span></td>
                 </tr>
                 <tr>
-                  <td>
-                    <strong>Giggle</strong><br />
-                    <code class="code-inline">giggle</code>
-                  </td>
+                  <td><strong>Giggle</strong><br /><code class="code-inline">giggle</code></td>
                   <td>General companion model (TFMF + LoRA)</td>
-                  <td>Casual chat, playful interaction, everyday listening</td>
+                  <td>¥1 / ¥5</td>
                   <td><span class="badge amber">In training</span></td>
                 </tr>
                 <tr>
-                  <td>
-                    <strong>Bro</strong><br />
-                    <code class="code-inline">bro</code>
-                  </td>
+                  <td><strong>Bro</strong><br /><code class="code-inline">bro</code></td>
                   <td>Companion model (TFMF + LoRA)</td>
-                  <td>Gaming, sports, study and tech conversation</td>
+                  <td>¥1 / ¥5</td>
                   <td><span class="badge amber">In training</span></td>
                 </tr>
                 <tr>
-                  <td>
-                    <strong>Sweetie</strong><br />
-                    <code class="code-inline">sweetie</code>
-                  </td>
+                  <td><strong>Sweetie</strong><br /><code class="code-inline">sweetie</code></td>
                   <td>Companion model (TFMF + LoRA)</td>
-                  <td>Emotional support, relationships, everyday sharing</td>
+                  <td>¥1 / ¥5</td>
                   <td><span class="badge amber">In training</span></td>
                 </tr>
               </tbody>
             </table>
           </div>
 
-          <h2 id="next-steps">Next Steps</h2>
+          <h2 id="usage">Usage</h2>
+          <div class="code-block">
+<pre>u = client.usage.retrieve()
+print(u.requests_total, u.tokens_total, u.balance_cny)
+print(u.by_model)</pre>
+          </div>
+
+          <h2 id="errors">Errors &amp; Rate Limits</h2>
           <p>
-            Now that you've made your first API call, here are some resources to continue your journey:
+            Every failure returns a stable <code class="code-inline">code</code> alongside a
+            human-readable message, and the SDK turns it into a typed exception:
           </p>
           <ul>
-            <li>Explore the <a href="#">Playground</a> to test different models and parameters</li>
-            <li>Check out our <a href="#">API Reference</a> for detailed endpoint documentation</li>
-            <li>Read our <a href="#">Best Practices</a> guide for tips on optimizing your usage</li>
-            <li>Join our <a href="#">Community</a> to connect with other developers</li>
+            <li><code class="code-inline">401 invalid_api_key</code> → <code class="code-inline">AuthenticationError</code></li>
+            <li><code class="code-inline">404 model_not_found</code> → <code class="code-inline">ModelNotFoundError</code></li>
+            <li><code class="code-inline">409 model_not_available</code> → <code class="code-inline">ModelNotAvailableError</code> (still training)</li>
+            <li><code class="code-inline">422 invalid_request</code> → <code class="code-inline">BadRequestError</code></li>
           </ul>
+          <p class="note">
+            Per-key rate limits and balance enforcement are not switched on yet — they are the
+            next thing we are building. Treat the platform as a preview.
+          </p>
         </article>
       </div>
     </section>
