@@ -167,7 +167,7 @@ def main() -> None:
     p.set_defaults(func=cmd_grant_credit)
 
     p = sub.add_parser("set-plan", help="set the Sigma plan")
-    p.add_argument("email"); p.add_argument("plan", choices=["free", "pro"])
+    p.add_argument("email"); p.add_argument("plan", choices=["free", "pro", "admin"])
     p.add_argument("months", nargs="?", type=int, default=1)
     p.set_defaults(func=cmd_set_plan)
 

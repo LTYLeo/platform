@@ -17,6 +17,31 @@
   var CONFIG = window.TAI_CONFIG || {};
   var API = String(CONFIG.apiBase || '').replace(/\/+$/, '') + '/api';
 
+  // The backend address lives in api-endpoint.json next to this page, so moving
+  // the tunnel never requires a rebuild. Same origin, so no CORS. Everything
+  // awaits API_READY, so no call can race the lookup and use a stale address.
+  var API_READY = (async function () {
+    try {
+      var res = await fetch('api-endpoint.json?t=' + Date.now(), { cache: 'no-store' });
+      if (!res.ok) return;
+      var cfg = await res.json();
+      if (cfg && cfg.base_url) {
+        CONFIG.apiBase = String(cfg.base_url).replace(/\/+$/, '');
+        API = CONFIG.apiBase + '/api';
+      }
+    } catch (e) { /* keep the fallback */ }
+  })();
+
+  // ngrok's free tier serves an HTML warning page to browser-looking requests,
+  // which makes every JSON call fail. Opt out; CORS already allows the header.
+  async function apiFetch(url, options) {
+    await API_READY;
+    options = options || {};
+    options.headers = Object.assign({}, options.headers,
+                                    { 'ngrok-skip-browser-warning': 'true' });
+    return fetch(url, options);
+  }
+
   var state = { user: null, loaded: false };
   var listeners = [];
 
@@ -37,7 +62,7 @@
       opts.body = JSON.stringify(body);
     }
 
-    return fetch(API + path, opts).then(function (res) {
+    return apiFetch(API + path, opts).then(function (res) {
       if (res.status === 204) return null;
       return res.json().catch(function () { return {}; }).then(function (data) {
         if (!res.ok) {
