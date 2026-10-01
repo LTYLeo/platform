@@ -1,0 +1,59 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tai-sdk"
+dynamic = ["version"]
+description = "Official Python SDK for the TAI Assistant API"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+keywords = ["tai", "assistant", "llm", "sdk", "api", "chat", "streaming"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+dependencies = ["httpx>=0.24"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+]
+
+[project.urls]
+Homepage = "https://ltyleo.github.io/platform/"
+Repository = "https://github.com/ltyleo/platform"
+
+[tool.hatch.version]
+path = "src/tai_sdk/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tai_sdk"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src",
+    "tests",
+    "examples",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "API_CONTRACT.md",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+# Explicit so pytest-asyncio does not warn about an unset default.
+asyncio_default_fixture_loop_scope = "function"

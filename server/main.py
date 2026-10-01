@@ -34,6 +34,8 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from server import db, pricing, security
+from server.api_v1 import router as api_v1_router
+from server.deps import client_ip, fail, require_api_key  # noqa: F401 - re-exported
 from server.schemas import (
     ApiKeyOut,
     CreateKeyRequest,
@@ -124,20 +126,20 @@ async def block_private_paths(request: Request, call_next):
     return await call_next(request)
 
 
+# The public, Bearer-key API (sdk/API_CONTRACT.md). It owns every /api/v1 path,
+# including GET /api/v1/models. Include it before the static mount so /api/*
+# always wins over the site.
+app.include_router(api_v1_router)
+
+
 # --------------------------------------------------------------------------- #
 # Helpers
 # --------------------------------------------------------------------------- #
 
-def fail(status_code: int, code: str, message: str) -> HTTPException:
-    """An error the front-end can translate by looking at ``detail.code``."""
-    return HTTPException(status_code=status_code, detail={"code": code, "message": message})
-
-
-def client_ip(request: Request) -> str:
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
+# ``fail()``, ``client_ip()`` and ``require_api_key()`` now live in
+# server/deps.py so the cookie API (here) and the Bearer-key API
+# (server/api_v1.py) share one implementation without importing each other.
+# They are imported at the top of this module and are still part of its surface.
 
 
 def assert_same_origin(request: Request) -> None:
@@ -426,54 +428,6 @@ def get_usage(
         for model, entry in pricing.MODELS.items()
     ]
     return summary
-
-
-# --------------------------------------------------------------------------- #
-# API-key authentication (for the future inference endpoints)
-# --------------------------------------------------------------------------- #
-
-def require_api_key(
-    request: Request,
-    conn: sqlite3.Connection = Depends(db.get_db),
-) -> sqlite3.Row:
-    """Authenticate a model call with ``Authorization: Bearer sk-tai-...``.
-
-    Not used by any route yet — the inference endpoints come next. It lives here
-    so the keys minted on the dashboard are real credentials from day one.
-    """
-    header = request.headers.get("authorization", "")
-    if not header.lower().startswith("bearer "):
-        raise fail(
-            status.HTTP_401_UNAUTHORIZED,
-            "missing_api_key",
-            "Provide your API key as a Bearer token",
-        )
-    row = db.find_api_key(conn, security.api_key_fingerprint(header[7:].strip()))
-    if row is None:
-        raise fail(status.HTTP_401_UNAUTHORIZED, "invalid_api_key", "Unknown or revoked API key")
-    if not row["user_active"]:
-        raise fail(status.HTTP_403_FORBIDDEN, "account_disabled", "This account is disabled")
-    return row
-
-
-@app.get("/api/v1/models")
-def list_models(key: sqlite3.Row = Depends(require_api_key)) -> dict:
-    """Validate an API key and return the catalogue. Cheap, useful smoke test."""
-    return {
-        "account": key["user_id"],
-        "key_prefix": key["key_prefix"],
-        "models": [
-            {
-                "id": model,
-                "name": entry["name"],
-                "live": entry["live"],
-                "input_cny_per_1m": entry["input"],
-                "output_cny_per_1m": entry["output"],
-            }
-            for model, entry in pricing.MODELS.items()
-            if entry["live"]
-        ],
-    }
 
 
 # --------------------------------------------------------------------------- #

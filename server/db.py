@@ -91,6 +91,53 @@ CREATE TABLE IF NOT EXISTS credit_ledger (
     created_at TEXT    NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_ledger_user ON credit_ledger (user_id);
+
+-- ---------------------------------------------------------------------------
+-- API v1 objects (sdk/API_CONTRACT.md §2-§4). Ids are opaque, type-prefixed
+-- strings rather than integers because they are handed to customers.
+--
+-- Deleting a user cascades to all three tables. Deleting a thread cascades to
+-- its messages. Deleting an assistant only clears threads.assistant_id (the
+-- thread keeps its own `model` and stays usable) -- see the note in the README.
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS assistants (
+    id            TEXT    PRIMARY KEY,
+    user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name          TEXT    NOT NULL,
+    model         TEXT    NOT NULL,
+    instructions  TEXT    NOT NULL DEFAULT '',
+    metadata_json TEXT    NOT NULL DEFAULT '{}',
+    created_at    TEXT    NOT NULL,
+    updated_at    TEXT    NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_assistants_user ON assistants (user_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS threads (
+    id            TEXT    PRIMARY KEY,
+    user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title         TEXT    NOT NULL,
+    assistant_id  TEXT    REFERENCES assistants(id) ON DELETE SET NULL,
+    model         TEXT,
+    metadata_json TEXT    NOT NULL DEFAULT '{}',
+    created_at    TEXT    NOT NULL,
+    updated_at    TEXT    NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_threads_user      ON threads (user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_threads_assistant ON threads (assistant_id);
+
+CREATE TABLE IF NOT EXISTS messages (
+    id         TEXT    PRIMARY KEY,
+    thread_id  TEXT    NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role       TEXT    NOT NULL,
+    content    TEXT    NOT NULL,
+    model      TEXT,
+    usage_json TEXT,
+    created_at TEXT    NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_messages_thread ON messages (thread_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_messages_user   ON messages (user_id);
 """
 
 
@@ -305,3 +352,299 @@ def usage_summary(conn: sqlite3.Connection, user_id: int) -> dict:
             for r in by_model
         ],
     }
+
+
+# --------------------------------------------------------------------------- #
+# API v1 objects: assistants, threads, messages
+#
+# Everything below is additive. Ids are opaque strings; ordering is always
+# ``created_at`` (second precision) with ``rowid`` as the tie-breaker, so two
+# objects created in the same second still page deterministically.
+# --------------------------------------------------------------------------- #
+
+_ASSISTANT_COLUMNS = ("name", "model", "instructions", "metadata_json")
+_THREAD_COLUMNS = ("title", "assistant_id", "model", "metadata_json")
+
+
+def _page(
+    conn: sqlite3.Connection,
+    *,
+    table: str,
+    where: str,
+    params: list,
+    limit: int,
+    after_row: sqlite3.Row | None,
+    ascending: bool = False,
+) -> list[sqlite3.Row]:
+    """Up to ``limit`` rows, continuing after ``after_row`` in sort order.
+
+    ``table``/``where`` are module-private literals, never user input.
+    """
+    operator = ">" if ascending else "<"
+    direction = "ASC" if ascending else "DESC"
+
+    sql = f"SELECT *, rowid AS _rowid FROM {table} WHERE {where}"
+    args = list(params)
+    if after_row is not None:
+        sql += (
+            f" AND (created_at {operator} ?"
+            f" OR (created_at = ? AND rowid {operator} ?))"
+        )
+        args += [after_row["created_at"], after_row["created_at"], int(after_row["_rowid"])]
+    sql += f" ORDER BY created_at {direction}, rowid {direction} LIMIT ?"
+    args.append(int(limit))
+    return conn.execute(sql, args).fetchall()
+
+
+def _update(
+    conn: sqlite3.Connection,
+    *,
+    table: str,
+    id_column: str,
+    object_id: str,
+    user_id: int,
+    columns: tuple[str, ...],
+    fields: dict,
+) -> sqlite3.Row | None:
+    """Apply a whitelisted subset of columns. Returns the fresh row, or None."""
+    allowed = {name: fields[name] for name in columns if name in fields}
+    if allowed:
+        assignments = ", ".join(f"{name} = ?" for name in allowed)
+        conn.execute(
+            f"UPDATE {table} SET {assignments} WHERE {id_column} = ? AND user_id = ?",
+            [*allowed.values(), object_id, user_id],
+        )
+    return conn.execute(
+        f"SELECT *, rowid AS _rowid FROM {table} WHERE {id_column} = ? AND user_id = ?",
+        (object_id, user_id),
+    ).fetchone()
+
+
+# -- assistants ------------------------------------------------------------- #
+
+def create_assistant(
+    conn: sqlite3.Connection,
+    assistant_id: str,
+    user_id: int,
+    name: str,
+    model: str,
+    instructions: str,
+    metadata_json: str,
+    now: str,
+) -> None:
+    conn.execute(
+        """
+        INSERT INTO assistants
+            (id, user_id, name, model, instructions, metadata_json, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (assistant_id, user_id, name, model, instructions, metadata_json, now, now),
+    )
+    conn.commit()
+
+
+def get_assistant(
+    conn: sqlite3.Connection, assistant_id: str, user_id: int
+) -> sqlite3.Row | None:
+    return conn.execute(
+        "SELECT *, rowid AS _rowid FROM assistants WHERE id = ? AND user_id = ?",
+        (assistant_id, user_id),
+    ).fetchone()
+
+
+def list_assistants(
+    conn: sqlite3.Connection, user_id: int, limit: int, after_row: sqlite3.Row | None = None
+) -> list[sqlite3.Row]:
+    return _page(
+        conn,
+        table="assistants",
+        where="user_id = ?",
+        params=[user_id],
+        limit=limit,
+        after_row=after_row,
+    )
+
+
+def update_assistant(
+    conn: sqlite3.Connection,
+    assistant_id: str,
+    user_id: int,
+    fields: dict,
+    now: str,
+) -> sqlite3.Row | None:
+    fields = {**fields, "updated_at": now}
+    row = _update(
+        conn,
+        table="assistants",
+        id_column="id",
+        object_id=assistant_id,
+        user_id=user_id,
+        columns=_ASSISTANT_COLUMNS + ("updated_at",),
+        fields=fields,
+    )
+    conn.commit()
+    return row
+
+
+def delete_assistant(conn: sqlite3.Connection, assistant_id: str, user_id: int) -> bool:
+    cursor = conn.execute(
+        "DELETE FROM assistants WHERE id = ? AND user_id = ?", (assistant_id, user_id)
+    )
+    conn.commit()
+    return cursor.rowcount > 0
+
+
+# -- threads ---------------------------------------------------------------- #
+
+def create_thread(
+    conn: sqlite3.Connection,
+    thread_id: str,
+    user_id: int,
+    title: str,
+    assistant_id: str | None,
+    model: str | None,
+    metadata_json: str,
+    now: str,
+) -> None:
+    conn.execute(
+        """
+        INSERT INTO threads
+            (id, user_id, title, assistant_id, model, metadata_json, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (thread_id, user_id, title, assistant_id, model, metadata_json, now, now),
+    )
+    conn.commit()
+
+
+def get_thread(conn: sqlite3.Connection, thread_id: str, user_id: int) -> sqlite3.Row | None:
+    return conn.execute(
+        "SELECT *, rowid AS _rowid FROM threads WHERE id = ? AND user_id = ?",
+        (thread_id, user_id),
+    ).fetchone()
+
+
+def list_threads(
+    conn: sqlite3.Connection, user_id: int, limit: int, after_row: sqlite3.Row | None = None
+) -> list[sqlite3.Row]:
+    return _page(
+        conn,
+        table="threads",
+        where="user_id = ?",
+        params=[user_id],
+        limit=limit,
+        after_row=after_row,
+    )
+
+
+def update_thread(
+    conn: sqlite3.Connection, thread_id: str, user_id: int, fields: dict, now: str
+) -> sqlite3.Row | None:
+    fields = {**fields, "updated_at": now}
+    row = _update(
+        conn,
+        table="threads",
+        id_column="id",
+        object_id=thread_id,
+        user_id=user_id,
+        columns=_THREAD_COLUMNS + ("updated_at",),
+        fields=fields,
+    )
+    conn.commit()
+    return row
+
+
+def delete_thread(conn: sqlite3.Connection, thread_id: str, user_id: int) -> bool:
+    """Deletes the thread and, by ON DELETE CASCADE, every message in it."""
+    cursor = conn.execute(
+        "DELETE FROM threads WHERE id = ? AND user_id = ?", (thread_id, user_id)
+    )
+    conn.commit()
+    return cursor.rowcount > 0
+
+
+def touch_thread(conn: sqlite3.Connection, thread_id: str, now: str) -> None:
+    conn.execute("UPDATE threads SET updated_at = ? WHERE id = ?", (now, thread_id))
+    conn.commit()
+
+
+def message_counts(conn: sqlite3.Connection, thread_ids: list[str]) -> dict[str, int]:
+    """``{thread_id: count}`` in one query, so listing threads is not N+1."""
+    if not thread_ids:
+        return {}
+    placeholders = ", ".join("?" for _ in thread_ids)
+    rows = conn.execute(
+        f"SELECT thread_id, COUNT(*) AS n FROM messages "
+        f"WHERE thread_id IN ({placeholders}) GROUP BY thread_id",
+        list(thread_ids),
+    ).fetchall()
+    return {r["thread_id"]: int(r["n"]) for r in rows}
+
+
+# -- messages --------------------------------------------------------------- #
+
+def create_message(
+    conn: sqlite3.Connection,
+    message_id: str,
+    thread_id: str,
+    user_id: int,
+    role: str,
+    content: str,
+    model: str | None,
+    usage_json: str | None,
+    now: str,
+) -> sqlite3.Row:
+    conn.execute(
+        """
+        INSERT INTO messages
+            (id, thread_id, user_id, role, content, model, usage_json, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (message_id, thread_id, user_id, role, content, model, usage_json, now),
+    )
+    conn.commit()
+    return get_message(conn, message_id, user_id)  # type: ignore[return-value]
+
+
+def get_message(
+    conn: sqlite3.Connection, message_id: str, user_id: int
+) -> sqlite3.Row | None:
+    return conn.execute(
+        "SELECT *, rowid AS _rowid FROM messages WHERE id = ? AND user_id = ?",
+        (message_id, user_id),
+    ).fetchone()
+
+
+def list_messages(
+    conn: sqlite3.Connection,
+    thread_id: str,
+    user_id: int,
+    limit: int,
+    after_row: sqlite3.Row | None = None,
+    ascending: bool = False,
+) -> list[sqlite3.Row]:
+    return _page(
+        conn,
+        table="messages",
+        where="thread_id = ? AND user_id = ?",
+        params=[thread_id, user_id],
+        limit=limit,
+        after_row=after_row,
+        ascending=ascending,
+    )
+
+
+def all_messages(
+    conn: sqlite3.Connection, thread_id: str, user_id: int, limit: int = 100
+) -> list[sqlite3.Row]:
+    """The most recent ``limit`` messages, returned oldest-first (prompt order)."""
+    rows = _page(
+        conn,
+        table="messages",
+        where="thread_id = ? AND user_id = ?",
+        params=[thread_id, user_id],
+        limit=limit,
+        after_row=None,
+        ascending=False,
+    )
+    return list(reversed(rows))

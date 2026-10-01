@@ -1,0 +1,6 @@
+{
+  "object": "endpoint",
+  "base_url": "http://127.0.0.1:8000",
+  "updated_at": "2026-09-30T15:10:00+00:00",
+  "note": "TAI Developer Platform API endpoint. This file is the SDK's discovery document: GitHub Pages cannot proxy API requests, but it can publish this pointer. When the home tunnel URL changes, update base_url here and push - every tai-sdk client picks it up automatically (cached 12h). Set TAI_SERVE_SITE=false on the API host; it should serve /api/* only."
+}

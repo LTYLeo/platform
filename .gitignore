@@ -7,3 +7,10 @@ venv/
 # Local database + secrets — never commit these
 server/data/
 .env
+
+# Python build / test artefacts
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/

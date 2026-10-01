@@ -198,9 +198,14 @@ See `server/.env.example`.
 
 ```
 config.js          front-end runtime config (API base URL)
-.github/workflows/pages.yml   publishes the static site WITHOUT server/
+api-endpoint.json  SDK discovery document (published on GitHub Pages)
+_config.yml        Jekyll excludes — keeps server/ and sdk/ off the public site
+sdk/               the tai-sdk Python package (published to PyPI)
 server/
-  main.py          FastAPI app: routes, security middleware, static mount
+  main.py          FastAPI app: auth routes, middleware, static mount, wiring
+  deps.py          shared dependencies: require_api_key, fail(), client_ip()
+  api_v1.py        the Assistant API (assistants / threads / messages / chat)
+  model_backend.py pluggable generation: stub | openai_compatible
   db.py            SQLite schema, login throttle, usage metering
   security.py      scrypt hashing, session tokens, API keys
   pricing.py       model catalogue + CNY cost calculation
@@ -210,13 +215,49 @@ server/
   data/app.db      created at runtime — back this up, never commit it
 ```
 
+## The Assistant API
+
+`server/api_v1.py` implements the contract in
+[`sdk/API_CONTRACT.md`](../sdk/API_CONTRACT.md) — our own shape, not OpenAI's.
+Authenticate with `Authorization: Bearer sk-tai-...`.
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST`/`GET` | `/api/v1/assistants` | create / list assistants (model + instructions) |
+| `GET`/`PATCH`/`DELETE` | `/api/v1/assistants/{id}` | fetch / update / delete |
+| `POST`/`GET` | `/api/v1/threads` | create / list persistent conversations |
+| `GET`/`PATCH`/`DELETE` | `/api/v1/threads/{id}` | fetch / update / delete |
+| `POST`/`GET` | `/api/v1/threads/{id}/messages` | append + generate, or list history |
+| `POST` | `/api/v1/chat` | stateless one-shot completion |
+| `GET` | `/api/v1/models` | live models with pricing |
+| `GET` | `/api/v1/usage` | this account's usage summary |
+
+`stream: true` on `/chat` or the messages endpoint returns `text/event-stream`
+with `message.start`, `message.delta`, `message.done` (and `error`) frames.
+
+### Where the words come from
+
+Nothing generates text until you attach a model. `TAI_MODEL_BACKEND` selects the
+implementation:
+
+* **`stub`** (default) — deterministic, offline, and deliberately labelled
+  `[stub backend]` in every reply. It exists so the SDK, the streaming plumbing
+  and the metering can be developed and tested before a model is served. It is
+  never presented as real output.
+* **`openai_compatible`** — forwards to a real server. Point
+  `TAI_MODEL_BASE_URL` at vLLM (`http://host:8001/v1`), llama.cpp server,
+  Ollama (`http://127.0.0.1:11434/v1`) or LM Studio, and the dashboard starts
+  reporting genuine token counts and costs.
+
 ## Not built yet
 
-The inference endpoints. `GET /api/usage` and the `usage_events` table are ready
-and correct, but nothing writes usage yet, so the dashboard honestly reports
-zeros. When you add `POST /api/v1/chat/completions`, authenticate it with the
-existing `require_api_key` dependency and call
-`db.record_usage(conn, user_id, key_id, model, input_tokens, output_tokens)` once
-per completion — the dashboard then fills in by itself. Top-ups would write to
-`credit_ledger`, which is what `balance_cny` sums.
+* **Payments.** `credit_ledger` exists and `balance_cny` sums it, but nothing
+  writes to it, so every account honestly reports ¥0.00. `insufficient_balance`
+  is defined but not enforced.
+* **Per-key rate limits.** `rate_limited` is defined; only login attempts are
+  throttled today (8 failures / 15 min / email+IP).
+* **Token counting is exact only for `openai_compatible`**, which takes the
+  upstream's reported usage. The stub estimates with `ceil(len/4)` and marks the
+  result `"estimated": true`.
+
 

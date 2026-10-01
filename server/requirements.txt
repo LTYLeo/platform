@@ -1,6 +1,11 @@
-# The service only needs FastAPI + an ASGI server. Password hashing uses
+# The service needs FastAPI + an ASGI server. Password hashing uses
 # hashlib.scrypt and storage uses sqlite3, both from the standard library,
 # so there are no compiled dependencies to build.
 fastapi>=0.110
 uvicorn[standard]>=0.27
 pydantic>=2.5
+
+# Only needed for TAI_MODEL_BACKEND=openai_compatible, which forwards to a real
+# model server (vLLM, llama.cpp, Ollama, LM Studio). The default "stub" backend
+# imports it lazily, so the API runs without it.
+httpx>=0.24
