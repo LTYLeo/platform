@@ -584,8 +584,25 @@ def grant_pro(conn: sqlite3.Connection, user_id: int, months: int) -> dict:
 
 
 def set_plan(conn: sqlite3.Connection, user_id: int, plan: str, months: int = 0) -> dict:
+    """Set a plan.
+
+    ``admin`` is the internal top tier: unlimited and never expiring, which is
+    why it stores a NULL expiry rather than a very long one.
+    """
     if plan == "pro":
         return grant_pro(conn, user_id, months or 1)
+    if plan == "admin":
+        conn.execute(
+            """
+            INSERT INTO subscriptions (user_id, plan, expires_at, updated_at)
+            VALUES (?, 'admin', NULL, ?)
+            ON CONFLICT(user_id) DO UPDATE SET plan = 'admin', expires_at = NULL,
+                                               updated_at = excluded.updated_at
+            """,
+            (user_id, db.iso(db.utcnow())),
+        )
+        conn.commit()
+        return {"plan": "admin", "expires_at": None, "days_left": None}
     conn.execute(
         """
         INSERT INTO subscriptions (user_id, plan, expires_at, updated_at)

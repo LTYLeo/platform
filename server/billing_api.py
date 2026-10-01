@@ -135,6 +135,13 @@ class SetPlanBody(BaseModel):
     plan: str = Field(default="pro")
     months: int = Field(default=1, ge=0, le=120)
 
+    @field_validator("plan")
+    @classmethod
+    def check_plan(cls, v: str) -> str:
+        if v not in ("free", "pro", "admin"):
+            raise ValueError("plan must be free, pro or admin")
+        return v
+
 
 # --------------------------------------------------------------------------- #
 # User-facing billing
