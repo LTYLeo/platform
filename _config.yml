@@ -6,10 +6,18 @@
 # downloadable at https://<user>.github.io/<repo>/server/main.py — and, if the
 # SQLite file were ever committed by accident, the entire user database with it.
 #
-# Keep the backend out of the published site entirely.
+# Keep the backend and the SDK source out of the published site entirely.
 exclude:
   - server
+  - sdk
   - vendor
   - Gemfile
   - Gemfile.lock
   - "*.md"
+
+# api-endpoint.json is deliberately NOT excluded. It is the SDK's discovery
+# document and must stay publicly readable at
+#   https://ltyleo.github.io/platform/api-endpoint.json
+# GitHub Pages cannot proxy API traffic, but it can publish this pointer to
+# wherever the API currently lives. Update base_url here whenever the tunnel
+# URL changes — every tai-sdk client picks it up automatically.
