@@ -141,6 +141,10 @@ class CredentialsBody(BaseModel):
 
 class RegisterBody(CredentialsBody):
     name: str = Field(default="", max_length=80)
+    # Only set by a caller that has already proven the account's *existing*
+    # password. Without it, an existing email is a conflict, never an overwrite:
+    # otherwise "register" with someone else's email would take the account over.
+    migrate: bool = False
 
 
 class SetPasswordBody(CredentialsBody):
@@ -570,8 +574,12 @@ def internal_register(
     now = db.iso(db.utcnow())
 
     if row is not None:
-        # Existing account: this is a migration, so set the password rather than
-        # refusing. Sigma only calls it after verifying the old password locally.
+        if not body.migrate:
+            # Plain sign-up against an address that already has an account.
+            raise fail(status.HTTP_409_CONFLICT, "email_taken",
+                       "An account with this email already exists")
+        # Migration: the caller proved the existing password before calling, so
+        # adopting the new one is safe. Skipped when it already matches.
         if not security.verify_password(body.password, row["password_hash"]):
             conn.execute(
                 "UPDATE users SET password_hash = ? WHERE id = ?",
