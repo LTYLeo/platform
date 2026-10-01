@@ -324,19 +324,63 @@ python3 -m server.admin_cli users
 * **Codes cannot be misread.** The alphabet omits `I L O 0 1`; input is
   normalised, so `tai - jcam - 467b - 236r` and `TAIJCAM467B236R` both work.
 
+## Sigma integration
+
+Sigma (the chat platform) keeps its own login but does **not** keep its own idea
+of what a plan is worth. It asks the platform, so there is one billing authority
+instead of two that drift apart.
+
+The two systems are joined on **email**, because it is the only identifier they
+already share: Sigma has its own account table and no knowledge of platform
+integer ids.
+
+| Endpoint | Used by | Purpose |
+|---|---|---|
+| `GET /api/internal/entitlements/by-email/{email}` | Sigma | plan, expiry, daily limit |
+| `GET /api/internal/entitlements/{user_id}` | anything with the id | same, by id |
+| `POST /api/internal/redeem` | Sigma | redeem `{email, code}` on the user's behalf |
+| `GET /api/internal/health` | Sigma | which payment channels are configured |
+
+All of them require `X-Internal-Token`, and the whole group returns **503
+`internal_api_disabled` when `TAI_INTERNAL_TOKEN` is unset** — an unauthenticated
+endpoint that discloses entitlements should not be one forgotten variable away.
+
+### Sigma configuration
+
+```bash
+export TAI_PLATFORM_URL="http://<pi-lan-ip>:8000"
+export TAI_INTERNAL_TOKEN="<same secret as the platform>"
+```
+
+### Behaviour that matters
+
+* **The platform is authoritative when it answers.** Sigma's local `role` field
+  is only consulted when the platform has no account for that email or cannot be
+  reached. A plan bought on the platform therefore takes effect within one cache
+  TTL (60 s), and a Pi outage degrades Sigma to its previous behaviour instead of
+  locking every user out.
+* **A failed lookup never creates an account.** Auto-provisioning would produce a
+  platform account with no password that could never be logged into, which is
+  worse than telling the user to register. Sigma surfaces
+  `no_platform_account` as "register on the platform with the same email first".
+* **Sigma never learns what a code is worth.** It forwards the string; the
+  platform decides, validates and records. `redeem_codes` is the only place a
+  code's value is defined.
+* **Entitlement lookups are cached for 60 s** because `/generate` is hot; a
+  lookup per generation would put the Pi on the critical path of every message.
+
 ## Not built yet
 
-* **Real payment channels.** `ManualProvider` works today. Afdian is written but
-  needs `TAI_AFDIAN_TOKEN` + `TAI_AFDIAN_USER_ID`; WeChat Pay Native is
-  deliberately a stub until signing credentials exist, because ordering a
-  payment without them produces QR codes nobody can scan.
+* **Sigma does not yet show the plan in its UI.** The backend routes
+  (`/entitlements`, `/redeem`) exist and are verified; the front-end still needs a
+  plan badge and a redeem box in `index.html`.
+* **WeChat Pay Native** is deliberately a stub until signing credentials exist:
+  ordering a payment without them produces QR codes that cannot be scanned.
+  Afdian is written and needs `TAI_AFDIAN_TOKEN` + `TAI_AFDIAN_USER_ID`.
 * **Invoices.** A Chinese VAT invoice needs tax registration, which needs a
-  business licence. Until then only a receipt can be issued.
-* **Per-key rate limits.** `rate_limited` is defined; only login attempts are
-  throttled today (8 failures / 15 min / email+IP). Balance is enforced, rate is
-  not.
-* **Sigma integration.** The internal entitlements endpoint is ready and tested;
-  Sigma does not call it yet, so Sigma's `users.json` still holds its own `role`.
+  business licence.
+* **Per-key rate limits.** Only login attempts are throttled today. Balance is
+  enforced; rate is not.
 * **Token counting is exact only for `openai_compatible`**, which takes the
   upstream's reported usage. The stub estimates with `ceil(len/4)` and marks the
   result `"estimated": true`.

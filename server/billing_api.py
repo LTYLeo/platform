@@ -124,6 +124,13 @@ class GrantCreditBody(BaseModel):
     reason: str = Field(default="manual grant", max_length=200)
 
 
+class InternalRedeemBody(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    email: str = Field(min_length=3, max_length=254)
+    code: str = Field(min_length=4, max_length=64)
+
+
 class SetPlanBody(BaseModel):
     plan: str = Field(default="pro")
     months: int = Field(default=1, ge=0, le=120)
@@ -410,6 +417,82 @@ def internal_entitlements(
 def internal_health(_: None = Depends(require_internal)):
     return {"status": "ok", "providers": [n for n, p in PROVIDERS.items()
                                            if getattr(p, "configured", True)]}
+
+
+def _user_by_email(conn: sqlite3.Connection, email: str) -> sqlite3.Row | None:
+    """Emails are matched case-insensitively: Sigma stores them as entered.
+
+    The two systems are joined on email rather than on ids because Sigma has its
+    own account table and no knowledge of platform integer ids. Email is the only
+    stable thing both sides already have.
+    """
+    return conn.execute(
+        "SELECT * FROM users WHERE lower(email) = lower(?)", (email.strip(),)
+    ).fetchone()
+
+
+@internal_router.get("/entitlements/by-email/{email}")
+def internal_entitlements_by_email(
+    email: str,
+    conn: sqlite3.Connection = Depends(db.get_db),
+    _: None = Depends(require_internal),
+):
+    """Entitlements for a Sigma account, looked up by email.
+
+    Returns 404 with ``no_platform_account`` when the email has no platform
+    account. Sigma turns that into "register on the platform first" rather than
+    inventing an account here: a silently provisioned account would have no
+    password and could never be logged into, which is worse than saying no.
+    """
+    row = _user_by_email(conn, email)
+    if row is None:
+        raise fail(
+            status.HTTP_404_NOT_FOUND,
+            "no_platform_account",
+            "No platform account for this email",
+        )
+    return billing.entitlements(conn, int(row["id"]))
+
+
+@internal_router.post("/redeem")
+def internal_redeem(
+    body: InternalRedeemBody,
+    conn: sqlite3.Connection = Depends(db.get_db),
+    _: None = Depends(require_internal),
+):
+    """Redeem a code on behalf of a Sigma user.
+
+    Sigma never sees the code's value, only the outcome, and the platform stays
+    the only thing that decides what a code is worth.
+    """
+    row = _user_by_email(conn, body.email)
+    if row is None:
+        raise fail(
+            status.HTTP_404_NOT_FOUND,
+            "no_platform_account",
+            "No platform account for this email",
+        )
+
+    ok, reason, result = billing.redeem_code(conn, body.code, int(row["id"]))
+    if not ok:
+        messages = {
+            "invalid_code": "That code is not valid.",
+            "already_redeemed": "That code has already been used.",
+            "code_expired": "That code has expired.",
+        }
+        raise fail(status.HTTP_400_BAD_REQUEST, reason, messages.get(reason, "Could not redeem"))
+    result["entitlements"] = billing.entitlements(conn, int(row["id"]))
+    return result
+
+
+@internal_router.get("/entitlements")
+def internal_entitlements_by_query(
+    email: str,
+    conn: sqlite3.Connection = Depends(db.get_db),
+    _: None = Depends(require_internal),
+):
+    """Same as the path form; convenient for a simple client."""
+    return internal_entitlements_by_email(email, conn, None)
 
 
 # --------------------------------------------------------------------------- #
