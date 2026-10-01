@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TAI Developer Platform – Build with Intelligence</title>
-  <link rel="icon" href="icon.jpg" />
+  <link rel="icon" href="favicon.png" />
 
   <!-- Locale must be decided before first paint so Chinese users never see an English flash -->
   <script>
@@ -56,7 +56,7 @@
   <!-- Navbar -->
   <header class="container site-header">
     <a class="logo" href="index.html">
-      <span class="mark"><img src="icon.jpg" alt="TAI Research Logo" /></span>
+      <span class="mark"><img src="logo.png" alt="TAI Research Logo" /></span>
       <span>
         <span class="logo-name">TAI Developer Platform</span>
         <small>Build with Intelligence</small>
@@ -82,6 +82,15 @@
           <div class="panel-title">Configuration</div>
 
           <div class="field">
+            <label for="pgKey">API Key</label>
+            <input id="pgKey" type="password" placeholder="sk-tai-..." autocomplete="off" spellcheck="false" />
+            <p class="muted tiny" style="margin-top:8px;">
+              Stored in this browser only. Create one in the
+              <a href="dashboard.html">Dashboard</a>.
+            </p>
+          </div>
+
+          <div class="field">
             <label for="modelSelect">Model</label>
             <select id="modelSelect">
               <option value="gtc-2.5-mini">GTC-2.5 mini</option>
@@ -90,54 +99,54 @@
               <option value="bro" disabled>Bro — in training</option>
               <option value="sweetie" disabled>Sweetie — in training</option>
             </select>
-            <p class="muted tiny" style="margin-top:8px;">
+            <p class="muted tiny" style="margin-top:8px;" id="modelHint">
               GTC-2.5 mini and TFMF are live. The companion models unlock once LoRA training finishes.
             </p>
           </div>
 
+          <div class="field" id="thinkingField" style="display:none;">
+            <label for="thinking">Reasoning</label>
+            <select id="thinking">
+              <option value="false" selected>Off — answer directly</option>
+              <option value="true">On — show the model's reasoning</option>
+            </select>
+            <p class="muted tiny" style="margin-top:8px;">
+              TFMF can think before answering. Off by default; on costs extra tokens.
+            </p>
+          </div>
+
           <div class="field">
-            <label for="temperature">Temperature</label>
-            <input id="temperature" type="range" min="0" max="1" step="0.1" value="0.7" />
-            <div class="scale-labels">
-              <span>0</span>
-              <span>0.7</span>
-              <span>1</span>
-            </div>
+            <label for="temperature">Temperature <span class="muted" id="tempValue">0.7</span></label>
+            <input id="temperature" type="range" min="0" max="2" step="0.1" value="0.7" />
+            <div class="scale-labels"><span>0</span><span>1</span><span>2</span></div>
           </div>
 
           <div class="field">
             <label for="maxTokens">Max Tokens</label>
-            <input id="maxTokens" type="number" value="256" />
+            <input id="maxTokens" type="number" min="1" max="8192" value="512" />
           </div>
 
           <div class="field">
             <label for="systemPrompt">System Prompt</label>
-            <textarea id="systemPrompt" style="min-height:128px;" placeholder="You are a helpful assistant..."></textarea>
+            <textarea id="systemPrompt" style="min-height:110px;" placeholder="Optional. Leave empty to use the model default."></textarea>
           </div>
 
-          <button class="btn block">Save Configuration</button>
+          <div class="field">
+            <label for="endpoint">API Endpoint</label>
+            <input id="endpoint" type="text" readonly />
+            <p class="muted tiny" style="margin-top:8px;">
+              Discovered from <a href="api-endpoint.json">api-endpoint.json</a>.
+            </p>
+          </div>
         </aside>
 
         <!-- Chat -->
         <div class="stack">
           <div class="panel">
-            <div class="chat-scroll">
-              <!-- User message -->
-              <div class="chat-bubble-user">
-                Hello, can you help me write a Python function to calculate factorial?
-              </div>
-
-              <!-- AI reply -->
-              <div class="chat-bubble-ai">
-                <p>Sure! Here's a Python function to calculate factorial:</p>
-                <div class="code-block">
-<pre>def factorial(n):
-    if n == 0:
-        return 1
-    else:
-        return n * factorial(n-1)</pre>
-                </div>
-                <p>This function uses recursion to calculate the factorial of a number.</p>
+            <div class="chat-scroll" id="chatScroll">
+              <div class="empty-state" id="chatEmpty">
+                <i class="fas fa-comments"></i>
+                <p>Enter your API key, then send a message to try the API.</p>
               </div>
             </div>
           </div>
@@ -145,17 +154,20 @@
           <!-- Composer -->
           <div class="composer">
             <div class="composer-row">
-              <textarea id="chatInput" rows="2" placeholder="Type your message here..."></textarea>
-              <button class="btn" aria-label="Send message"><i class="fas fa-paper-plane"></i></button>
+              <textarea id="chatInput" rows="2" placeholder="Type your message here... (Enter to send, Shift+Enter for a new line)"></textarea>
+              <button class="btn" id="sendBtn" aria-label="Send message"><i class="fas fa-paper-plane"></i></button>
             </div>
             <div class="composer-meta">
               <div>
-                <button class="link-btn"><i class="fas fa-sliders-h"></i> Parameters</button>
-                <button class="link-btn"><i class="fas fa-trash-alt"></i> Clear</button>
+                <button class="link-btn" id="clearBtn"><i class="fas fa-trash-alt"></i> Clear</button>
+                <button class="link-btn" id="codeBtn"><i class="fas fa-code"></i> Code</button>
               </div>
               <div>
-                <span>0 tokens</span>
+                <span id="usageLine" class="muted tiny">—</span>
               </div>
+            </div>
+            <div class="code-block" id="codeBlock" style="display:none; margin-top:12px;">
+              <pre id="codeText"></pre>
             </div>
           </div>
         </div>
@@ -170,7 +182,7 @@
       <div class="footer-grid">
         <div>
           <div class="footer-brand">
-            <img src="icon.jpg" alt="TAI Research Logo" />
+            <img src="logo.png" alt="TAI Research Logo" />
             <span>TAI Developer Platform</span>
           </div>
           <p class="muted">Building the Future of Creation with AI.</p>
@@ -217,5 +229,233 @@
   <script src="locales/zh.js"></script>
   <script src="i18n.js"></script>
   <script src="auth.js"></script>
+  <script>
+  /* Playground: a real client for /api/v1/chat.
+     It uses an API key rather than the dashboard session, because the public API
+     authenticates with a bearer key and nothing else - pretending otherwise would
+     make the page lie about how the API works. */
+  (function () {
+    var KEY_STORE = 'tai_playground_key';
+    var CONFIG = window.TAI_CONFIG || {};
+    var messages = [];
+    var busy = false;
+    var lastCode = '';
+
+    var $ = function (id) { return document.getElementById(id); };
+    var keyInput = $('pgKey'), modelSelect = $('modelSelect'), tempInput = $('temperature');
+    var tempValue = $('tempValue'), maxTokens = $('maxTokens'), systemPrompt = $('systemPrompt');
+    var thinkingField = $('thinkingField'), thinking = $('thinking');
+    var chatScroll = $('chatScroll'), chatEmpty = $('chatEmpty'), chatInput = $('chatInput');
+    var sendBtn = $('sendBtn'), usageLine = $('usageLine'), endpointInput = $('endpoint');
+    var codeBlock = $('codeBlock'), codeText = $('codeText');
+
+    function apiBase() {
+      return String(CONFIG.apiBase || '').replace(/\/+$/, '');
+    }
+
+    // The API host is published next to this page, so a tunnel move needs no rebuild.
+    var READY = (async function () {
+      try {
+        var res = await fetch('api-endpoint.json?t=' + Date.now(), { cache: 'no-store' });
+        if (!res.ok) return;
+        var cfg = await res.json();
+        if (cfg && cfg.base_url) CONFIG.apiBase = String(cfg.base_url).replace(/\/+$/, '');
+      } catch (e) { /* keep the fallback */ }
+      endpointInput.value = apiBase() + '/api/v1/chat';
+    })();
+
+    // ngrok's free tier answers browser-looking requests with an HTML page, which
+    // would otherwise surface as a JSON parse error.
+    function apiFetch(url, options) {
+      options = options || {};
+      options.headers = Object.assign({}, options.headers,
+                                      { 'ngrok-skip-browser-warning': 'true' });
+      return fetch(url, options);
+    }
+
+    function esc(s) {
+      return String(s).replace(/[&<>"]/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+      });
+    }
+
+    function bubble(role, text) {
+      var el = document.createElement('div');
+      el.className = role === 'user' ? 'chat-bubble-user' : 'chat-bubble-ai';
+      el.innerHTML = '<p>' + esc(text).replace(/\n/g, '<br>') + '</p>';
+      return el;
+    }
+
+    function showThinkingNote(el) {
+      var note = document.createElement('p');
+      note.className = 'muted tiny';
+      note.innerText = 'Reasoning shown because you enabled it.';
+      el.appendChild(note);
+    }
+
+    function addMessage(role, text) {
+      if (chatEmpty) chatEmpty.style.display = 'none';
+      var el = bubble(role, text);
+      chatScroll.appendChild(el);
+      chatScroll.scrollTop = chatScroll.scrollHeight;
+      return el;
+    }
+
+    function setBusy(on) {
+      busy = on;
+      sendBtn.disabled = on;
+      sendBtn.innerHTML = on ? '<i class="fas fa-circle-notch fa-spin"></i>'
+                             : '<i class="fas fa-paper-plane"></i>';
+    }
+
+    function updateCode() {
+      var body = {
+        model: modelSelect.value,
+        messages: messages.concat([{ role: 'user', content: chatInput.value || '...' }]),
+        temperature: parseFloat(tempInput.value),
+        max_output_tokens: parseInt(maxTokens.value, 10) || 512,
+        stream: true
+      };
+      if (modelSelect.value === 'tfmf') body.enable_thinking = thinking.value === 'true';
+      lastCode =
+        "curl " + apiBase() + "/api/v1/chat \\\n" +
+        "  -H \"Authorization: Bearer $TAI_API_KEY\" \\\n" +
+        "  -H \"Content-Type: application/json\" \\\n" +
+        "  -d '" + JSON.stringify(body, null, 2) + "'";
+      codeText.innerText = lastCode;
+    }
+
+    function syncModelFields() {
+      var isTfmf = modelSelect.value === 'tfmf';
+      thinkingField.style.display = isTfmf ? 'block' : 'none';
+      $('modelHint').innerText = isTfmf
+        ? 'TFMF is a post-trained language model on Qwen3.5. Reasoning is optional.'
+        : 'GTC-2.5 mini is the lightweight 64M model.';
+    }
+
+    async function send() {
+      await READY;
+      if (busy) return;
+
+      var key = (keyInput.value || '').trim();
+      var text = (chatInput.value || '').trim();
+      if (!key) { addMessage('ai', 'Enter your API key first (Dashboard -> API Keys).'); return; }
+      if (!text) return;
+
+      localStorage.setItem(KEY_STORE, key);
+      addMessage('user', text);
+      messages.push({ role: 'user', content: text });
+      chatInput.value = '';
+      setBusy(true);
+      usageLine.innerText = 'streaming...';
+
+      var reply = addMessage('ai', '');
+      var body = {
+        model: modelSelect.value,
+        messages: messages.slice(),
+        temperature: parseFloat(tempInput.value),
+        max_output_tokens: parseInt(maxTokens.value, 10) || 512,
+        stream: true
+      };
+      var sys = (systemPrompt.value || '').trim();
+      if (sys) body.messages.unshift({ role: 'system', content: sys });
+      if (modelSelect.value === 'tfmf') body.enable_thinking = thinking.value === 'true';
+
+      var full = '';
+      try {
+        var res = await apiFetch(apiBase() + '/api/v1/chat', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+
+        if (!res.ok) {
+          var err = await res.json().catch(function () { return {}; });
+          reply.innerHTML = '<p class="form-error">' +
+            esc(err.message || err.code || ('HTTP ' + res.status)) + '</p>';
+          messages.pop();
+          usageLine.innerText = 'failed';
+          return;
+        }
+
+        // SSE frames: "event: <name>\ndata: <json>\n\n"
+        var reader = res.body.getReader();
+        var decoder = new TextDecoder();
+        var buffer = '';
+        while (true) {
+          var chunk = await reader.read();
+          if (chunk.done) break;
+          buffer += decoder.decode(chunk.value, { stream: true });
+          var parts = buffer.split('\n\n');
+          buffer = parts.pop();
+          for (var i = 0; i < parts.length; i++) {
+            var frame = parts[i];
+            var event = (frame.match(/^event:\s*(.+)$/m) || [])[1];
+            var dataLine = (frame.match(/^data:\s*(.+)$/m) || [])[1];
+            if (!dataLine) continue;
+            var data;
+            try { data = JSON.parse(dataLine); } catch (e) { continue; }
+
+            if (event === 'message.delta' && data.delta) {
+              full += data.delta;
+              reply.innerHTML = '<p>' + esc(full).replace(/\n/g, '<br>') + '</p>';
+              chatScroll.scrollTop = chatScroll.scrollHeight;
+            } else if (event === 'message.done') {
+              var u = data.usage || {};
+              usageLine.innerText = (u.input_tokens || 0) + ' in / ' +
+                (u.output_tokens || 0) + ' out · ¥' + (u.cost_cny || 0).toFixed(6) +
+                ((modelSelect.value === 'tfmf' && thinking.value === 'true') ? ' · reasoning on' : '');
+            } else if (event === 'error') {
+              reply.innerHTML = '<p class="form-error">' + esc(data.message || 'error') + '</p>';
+            }
+          }
+        }
+        if (full) {
+          messages.push({ role: 'assistant', content: full });
+        } else {
+          reply.innerHTML = '<p class="muted">(empty response)</p>';
+          messages.pop();
+        }
+      } catch (e) {
+        reply.innerHTML = '<p class="form-error">' + esc(String(e)) + '</p>';
+        messages.pop();
+        usageLine.innerText = 'failed';
+      } finally {
+        setBusy(false);
+        updateCode();
+      }
+    }
+
+    // ---- wiring ------------------------------------------------------------
+    var saved = localStorage.getItem(KEY_STORE);
+    if (saved) keyInput.value = saved;
+    keyInput.addEventListener('change', function () {
+      localStorage.setItem(KEY_STORE, (keyInput.value || '').trim());
+    });
+    tempInput.addEventListener('input', function () { tempValue.innerText = tempInput.value; });
+    modelSelect.addEventListener('change', syncModelFields);
+    sendBtn.addEventListener('click', send);
+    chatInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+    });
+    $('clearBtn').addEventListener('click', function () {
+      messages = [];
+      chatScroll.innerHTML = '';
+      if (chatEmpty) { chatEmpty.style.display = ''; chatScroll.appendChild(chatEmpty); }
+      usageLine.innerText = '—';
+      codeBlock.style.display = 'none';
+    });
+    $('codeBtn').addEventListener('click', function () {
+      updateCode();
+      codeBlock.style.display = codeBlock.style.display === 'none' ? 'block' : 'none';
+    });
+    ['modelSelect', 'temperature', 'maxTokens', 'thinking'].forEach(function (id) {
+      $(id).addEventListener('change', updateCode);
+    });
+
+    syncModelFields();
+    READY.then(updateCode);
+  })();
+  </script>
 </body>
 </html>

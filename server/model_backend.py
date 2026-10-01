@@ -62,7 +62,9 @@ except Exception:  # noqa: BLE001 - a missing httpx must only break the HTTP bac
 
 STUB = "stub"
 OPENAI_COMPATIBLE = "openai_compatible"
-KNOWN_BACKENDS = (STUB, OPENAI_COMPATIBLE)
+SIGMA = "sigma"          # talk to Sigma's own /generate (kept for rollback)
+INFERENCE = "inference"  # talk to the dedicated inference service
+KNOWN_BACKENDS = (STUB, OPENAI_COMPATIBLE, SIGMA, INFERENCE)
 
 #: The literal marker every stub reply carries, so nothing can be mistaken for a
 #: real model answer (contract §8).
@@ -452,6 +454,163 @@ def _stream_openai(
 # Public interface
 # --------------------------------------------------------------------------- #
 
+
+# --------------------------------------------------------------------------- #
+# sigma backend
+# --------------------------------------------------------------------------- #
+# Sigma is the chat platform; it holds the GTC models in memory on the same box.
+# Rather than loading a second copy of every checkpoint, the API calls Sigma's
+# /generate. Sigma has no per-token accounting of its own, so usage is estimated
+# and flagged, exactly as the stub does - it is never passed off as measured.
+
+# Platform model id -> the name Sigma's /generate expects. Sigma's own model
+# selector calls GTC-2.5 mini "gtc25" and GTC-2.5 "gtc25_400m".
+SIGMA_MODEL_ALIASES: dict[str, str] = {
+    "gtc-2.5-mini": "gtc25",
+    "gtc-2.5": "gtc25_400m",
+    "gtc-2.5v": "gtc25v",
+    "gtc-2.5o": "gtc25o",
+    "esft-gtc-2": "esft",
+}
+
+
+def _sigma_url() -> str:
+    """Where to send generations.
+
+    ``sigma`` points at the chat platform's own /generate; ``inference`` points at
+    the dedicated inference service. Same wire format, so they share this code.
+    """
+    if backend_name() == INFERENCE:
+        return (os.getenv("TAI_INFERENCE_URL") or "http://127.0.0.1:8001").rstrip("/")
+    return (os.getenv("TAI_SIGMA_URL") or "http://127.0.0.1:5001").rstrip("/")
+
+
+def _sigma_model(model: str) -> str:
+    return SIGMA_MODEL_ALIASES.get(model, model)
+
+
+def _sigma_headers() -> dict[str, str]:
+    """Auth for the generation call.
+
+    The dedicated inference service is protected by a shared secret; Sigma's own
+    /generate reads the caller's JWT and tolerates none.
+    """
+    if backend_name() == INFERENCE:
+        token = (os.getenv("TAI_INFERENCE_TOKEN") or "").strip()
+        if token:
+            return {"Authorization": "Bearer " + token}
+    return {}
+
+
+def _sigma_payload(model: str, messages: list[dict[str, Any]], temperature: float,
+                   max_output_tokens: int, stream: bool) -> dict[str, Any]:
+    return {
+        "text": prompt_text(messages),
+        "model": _sigma_model(model),
+        "max_len": max_output_tokens,
+        "temperature": temperature,
+        "stream": stream,
+    }
+
+
+def _generate_sigma(
+    model: str, messages: list[dict[str, Any]], *, temperature: float, max_output_tokens: int
+) -> GenerationResult:
+    _require_httpx()
+    import httpx
+
+    url = _sigma_url() + "/generate"
+    try:
+        with httpx.Client(timeout=_timeout()) as client:
+            response = client.post(
+                url,
+                json=_sigma_payload(model, messages, temperature, max_output_tokens, False),
+                headers=_sigma_headers(),
+            )
+            response.raise_for_status()
+            data = response.json()
+    except Exception as exc:  # noqa: BLE001 - every failure becomes a 502 upstream
+        raise BackendUnavailable(f"sigma backend at {url} failed: {exc}") from exc
+
+    if isinstance(data, dict) and data.get("error"):
+        raise BackendUnavailable(f"sigma: {data.get('error')}")
+
+    text = str((data or {}).get("generated_text") or "")
+    return GenerationResult(
+        text=text,
+        input_tokens=estimate_tokens(prompt_text(messages)),
+        output_tokens=estimate_tokens(text),
+        estimated=True,
+    )
+
+
+def _iter_sigma_sse(response: Any) -> Iterator[str]:
+    """Turn Sigma's SSE frames into plain text deltas.
+
+    Frames are ``data: {"chunk": "..."}`` and a terminating ``data: {"done": true}``.
+    """
+    import json as _json
+
+    for line in response.iter_lines():
+        if not line:
+            continue
+        if isinstance(line, bytes):
+            line = line.decode("utf-8", "replace")
+        if not line.startswith("data:"):
+            continue
+        body = line[5:].strip()
+        if not body:
+            continue
+        try:
+            frame = _json.loads(body)
+        except ValueError:
+            continue
+        if isinstance(frame, dict):
+            if frame.get("done"):
+                return
+            chunk = frame.get("chunk")
+            if chunk:
+                yield str(chunk)
+        elif isinstance(frame, str):
+            yield frame
+
+
+def _stream_sigma(
+    model: str, messages: list[dict[str, Any]], *, temperature: float, max_output_tokens: int
+) -> tuple[Iterator[str], dict[str, Any]]:
+    _require_httpx()
+    import httpx
+
+    url = _sigma_url() + "/generate"
+    client = httpx.Client(timeout=_timeout())
+    try:
+        # Opened eagerly so a dead backend raises here, before any SSE byte has
+        # been sent, and the caller can still answer 502.
+        response = client.send(
+            client.build_request(
+                "POST", url,
+                json=_sigma_payload(model, messages, temperature, max_output_tokens, True),
+                headers=_sigma_headers(),
+            ),
+            stream=True,
+        )
+        response.raise_for_status()
+    except Exception as exc:  # noqa: BLE001
+        client.close()
+        raise BackendUnavailable(f"sigma backend at {url} failed: {exc}") from exc
+
+    def inner() -> Iterator[str]:
+        try:
+            yield from _iter_sigma_sse(response)
+        finally:
+            try:
+                response.close()
+            finally:
+                client.close()
+
+    return inner(), {}
+
+
 def generate(
     model: str,
     messages: list[dict[str, Any]],
@@ -460,8 +619,13 @@ def generate(
     max_output_tokens: int = 512,
 ) -> GenerationResult:
     """Run one completion. Raises :class:`BackendUnavailable` on any failure."""
-    if backend_name() == STUB:
+    name = backend_name()
+    if name == STUB:
         return _stub_generate(
+            model, messages, temperature=temperature, max_output_tokens=max_output_tokens
+        )
+    if name in (SIGMA, INFERENCE):
+        return _generate_sigma(
             model, messages, temperature=temperature, max_output_tokens=max_output_tokens
         )
     return _generate_openai(
@@ -488,6 +652,11 @@ def stream(
             model, messages, temperature=temperature, max_output_tokens=max_output_tokens
         )
         return StreamHandle(inner, {}, messages)
+    if backend_name() in (SIGMA, INFERENCE):
+        sigma_inner, sigma_state = _stream_sigma(
+            model, messages, temperature=temperature, max_output_tokens=max_output_tokens
+        )
+        return StreamHandle(sigma_inner, sigma_state, messages)
 
     inner, state = _stream_openai(
         model, messages, temperature=temperature, max_output_tokens=max_output_tokens

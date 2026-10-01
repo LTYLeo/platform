@@ -5,7 +5,7 @@
    It cannot run the Python/FastAPI authentication service, so that service
    lives on its own host and this file tells the front-end where to find it.
 
-   apiBase: 'https://synchronistical-dede-coeducationally.ngrok-free.dev'                        -> same origin. Use this for local development
+        ''                      -> same origin. Use this for local development
                                   (`python3 -m uvicorn server.main:app`) or any
                                   setup where one process serves both the pages
                                   and the API.
@@ -28,5 +28,7 @@
    See server/README.md -> "Deploying" for the full walkthrough.
    ========================================================================== */
 window.TAI_CONFIG = {
-  apiBase: ''
+  // Overridden at runtime by api-endpoint.json (see auth.js), so moving the
+  // tunnel is a one-file change rather than a rebuild of the site.
+  apiBase: 'https://synchronistical-dede-coeducationally.ngrok-free.dev'
 };
