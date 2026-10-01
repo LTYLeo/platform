@@ -75,40 +75,75 @@
           <ul>
             <li><a href="#introduction" class="active">Introduction</a></li>
             <li><a href="#authentication">Authentication</a></li>
-            <li><a href="#first-request">Your First Request</a></li>
+            <li><a href="#install">Install the SDK</a></li>
+            <li><a href="#quickstart">Quickstart</a></li>
           </ul>
 
-          <h4>API Reference</h4>
+          <h4>Core Concepts</h4>
           <ul>
-            <li><a href="#first-request">Chat</a></li>
+            <li><a href="#chat">Chat</a></li>
             <li><a href="#streaming">Streaming</a></li>
-            <li><a href="#assistants">Assistants &amp; Threads</a></li>
-            <li><a href="#available-models">Models</a></li>
-            <li><a href="#usage">Usage</a></li>
+            <li><a href="#assistants">Assistants</a></li>
+            <li><a href="#threads">Threads</a></li>
+            <li><a href="#messages">Messages</a></li>
+            <li><a href="#pagination">Pagination</a></li>
           </ul>
 
-          <h4>Guides</h4>
+          <h4>Account</h4>
           <ul>
-            <li><a href="#errors">Error Handling</a></li>
-            <li><a href="#errors">Rate Limits</a></li>
-            <li><a href="#introduction">Migration Guide</a></li>
+            <li><a href="#models">Models</a></li>
+            <li><a href="#usage">Usage</a></li>
+            <li><a href="#billing">Billing &amp; Codes</a></li>
+          </ul>
+
+          <h4>Reference</h4>
+          <ul>
+            <li><a href="#errors">Errors</a></li>
+            <li><a href="#limits">Limits</a></li>
+            <li><a href="#sdk">SDK Reference</a></li>
+            <li><a href="#async">Async Client</a></li>
           </ul>
         </aside>
 
         <!-- Article -->
         <article class="doc-body" id="introduction">
-          <h1>Getting Started with the TAI API</h1>
+          <h1>TAI API Reference</h1>
 
           <p class="lead">
-            The TAI Assistant API is our own shape — not a clone of anyone else's. It gives you
-            assistants, persistent threads, one-off chat, and streaming, authenticated with an
-            API key.
+            The TAI Assistant API is our own shape, not a clone of anyone else's. It gives you
+            assistants, persistent threads, one-off chat and streaming, authenticated with an API
+            key. This page documents every endpoint, and every example runs against
+            <code class="code-inline">tai-sdk</code>.
+          </p>
+
+          <div class="table-wrap">
+            <table class="styled-table">
+              <thead><tr><th>Base URL</th><th>Where it comes from</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><code class="code-inline">https://YOUR_API_HOST</code></td>
+                  <td>
+                    The SDK finds this for you. Resolution order: <code class="code-inline">base_url=</code>
+                    argument &rarr; <code class="code-inline">TAI_BASE_URL</code> env var &rarr;
+                    <code class="code-inline">~/.tai/config.json</code> &rarr;
+                    <a href="api-endpoint.json">api-endpoint.json</a> (cached 12&nbsp;h) &rarr; a built-in default.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="note">
+            Because the API host is a home server behind a tunnel, its address can change.
+            That is what <a href="api-endpoint.json">api-endpoint.json</a> is for: it is published
+            here on GitHub Pages, and every SDK client re-reads it, so a move is a one-file change.
           </p>
 
           <h2 id="authentication">Authentication</h2>
           <p>
             Create a key in the <a href="dashboard.html">Dashboard</a>, then send it as a bearer
-            token. Keys are shown in full only once, when you create them.
+            token. The full key is shown <strong>once</strong>, at creation; we store only a
+            SHA-256 fingerprint and a short display prefix.
           </p>
 
           <div class="code-block">
@@ -116,149 +151,404 @@
   -H "Authorization: Bearer sk-tai-..."</pre>
           </div>
 
-          <h2 id="first-request">Your First Request</h2>
-          <p>Install the SDK and make a stateless call:</p>
+          <p>
+            Keys are scoped to your account. Revoking one is immediate, and a revoked key returns
+            <code class="code-inline">401 invalid_api_key</code>.
+          </p>
 
+          <h2 id="install">Install the SDK</h2>
           <div class="code-block">
 <pre>pip install tai-sdk</pre>
           </div>
+          <p>
+            Python 3.9+. The only runtime dependency is <code class="code-inline">httpx</code>.
+            The key can also come from the environment, so it never has to appear in code:
+          </p>
+          <div class="code-block">
+<pre>export TAI_API_KEY="sk-tai-..."</pre>
+          </div>
 
+          <h2 id="quickstart">Quickstart</h2>
           <div class="code-block">
 <pre>from tai_sdk import TAI
 
-client = TAI(api_key="sk-tai-...")   # base URL is auto-discovered
+client = TAI()          # reads TAI_API_KEY, discovers the API host
 
 reply = client.chat.create(
     model="tfmf",
-    messages=[{"role": "user", "content": "Hello!"}],
+    messages=[{"role": "user", "content": "Explain LoRA in two sentences."}],
 )
 
-print(reply.output.content)
+print(reply.content)                    # shortcut for reply.output["content"]
 print(reply.usage.input_tokens, reply.usage.output_tokens, reply.usage.cost_cny)</pre>
           </div>
-
           <p>
-            Prefer raw HTTP? <code class="code-inline">POST /api/v1/chat</code> takes the same
-            fields as JSON and returns the same shape.
+            Every response carries its own <code class="code-inline">usage</code>, so you can cost
+            a call without asking a second endpoint.
           </p>
 
-          <h2 id="streaming">Streaming</h2>
-          <p>
-            Pass <code class="code-inline">stream=True</code> and you get server-sent events:
-            <code class="code-inline">message.start</code>, then
-            <code class="code-inline">message.delta</code> per fragment, then
-            <code class="code-inline">message.done</code> carrying the usage.
-          </p>
-
-          <div class="code-block">
-<pre>from tai_sdk.types import MessageDelta, MessageDone
-
-for event in client.chat.stream(
-    model="tfmf",
-    messages=[{"role": "user", "content": "Count to five."}],
-):
-    if isinstance(event, MessageDelta):
-        print(event.delta, end="", flush=True)
-    elif isinstance(event, MessageDone):
-        print("\n", event.usage.output_tokens, "tokens")</pre>
-          </div>
-
-          <h2 id="assistants">Assistants &amp; Threads</h2>
-          <p>
-            An <strong>assistant</strong> stores a model plus system instructions. A
-            <strong>thread</strong> stores the conversation, so you never resend history.
-          </p>
-
-          <div class="code-block">
-<pre>assistant = client.assistants.create(
-    name="Tutor",
-    model="tfmf",
-    instructions="You are a patient tutor. Answer briefly.",
-)
-
-thread = client.threads.create(assistant_id=assistant.id)
-
-exchange = client.threads.messages.create(
-    thread.id,
-    content="Explain LoRA in two sentences.",
-)
-print(exchange.assistant_message.content)</pre>
-          </div>
-
-          <h2 id="available-models">Available Models</h2>
-          <p>
-            Pass a model id as <code class="code-inline">model</code>. Call
-            <code class="code-inline">client.models.list()</code> at runtime to get the live list
-            with current prices.
-          </p>
+          <h2 id="chat">Chat</h2>
+          <p>Stateless: you send the whole history every time. <code class="code-inline">POST /api/v1/chat</code></p>
 
           <div class="table-wrap">
             <table class="styled-table">
-              <thead>
-                <tr>
-                  <th>Model</th>
-                  <th>Description</th>
-                  <th>Input / Output per 1M</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
+              <thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead>
               <tbody>
-                <tr>
-                  <td><strong>GTC-2.5 mini</strong><br /><code class="code-inline">gtc-2.5-mini</code></td>
-                  <td>Lightweight 64M base model</td>
-                  <td>¥0.5 / ¥1</td>
-                  <td><span class="badge green">Live</span></td>
-                </tr>
-                <tr>
-                  <td><strong>TFMF</strong><br /><code class="code-inline">tfmf</code></td>
-                  <td>General foundation model on Qwen 3.5-4B (INT8)</td>
-                  <td>¥0.5 / ¥3</td>
-                  <td><span class="badge green">Live</span></td>
-                </tr>
-                <tr>
-                  <td><strong>Giggle</strong><br /><code class="code-inline">giggle</code></td>
-                  <td>General companion model (TFMF + LoRA)</td>
-                  <td>¥1 / ¥5</td>
-                  <td><span class="badge amber">In training</span></td>
-                </tr>
-                <tr>
-                  <td><strong>Bro</strong><br /><code class="code-inline">bro</code></td>
-                  <td>Companion model (TFMF + LoRA)</td>
-                  <td>¥1 / ¥5</td>
-                  <td><span class="badge amber">In training</span></td>
-                </tr>
-                <tr>
-                  <td><strong>Sweetie</strong><br /><code class="code-inline">sweetie</code></td>
-                  <td>Companion model (TFMF + LoRA)</td>
-                  <td>¥1 / ¥5</td>
-                  <td><span class="badge amber">In training</span></td>
-                </tr>
+                <tr><td><code class="code-inline">model</code></td><td>string</td><td>Required unless <code class="code-inline">assistant_id</code> is given.</td></tr>
+                <tr><td><code class="code-inline">assistant_id</code></td><td>string</td><td>Supplies the model and the system instructions.</td></tr>
+                <tr><td><code class="code-inline">messages</code></td><td>array</td><td>1&ndash;100 items of <code class="code-inline">{role, content}</code>; role is <code class="code-inline">user</code>, <code class="code-inline">assistant</code> or <code class="code-inline">system</code>.</td></tr>
+                <tr><td><code class="code-inline">temperature</code></td><td>float</td><td>0.0&ndash;2.0, default 0.7.</td></tr>
+                <tr><td><code class="code-inline">max_output_tokens</code></td><td>int</td><td>1&ndash;8192, default 512.</td></tr>
+                <tr><td><code class="code-inline">stream</code></td><td>bool</td><td>See <a href="#streaming">Streaming</a>.</td></tr>
               </tbody>
             </table>
           </div>
 
+          <p>The response:</p>
+          <div class="code-block">
+<pre>{
+  "id": "chat_...",
+  "object": "chat.completion",
+  "model": "tfmf",
+  "output":    { "role": "assistant", "content": "..." },
+  "usage":     { "input_tokens": 12, "output_tokens": 40,
+                 "cost_cny": 0.000126, "estimated": true },
+  "created_at": "2026-10-01T09:00:00+00:00"
+}</pre>
+          </div>
+
+          <h2 id="streaming">Streaming</h2>
+          <p>
+            Pass <code class="code-inline">stream=True</code> and you get server-sent events. The
+            SDK turns them into typed objects, so you never parse SSE yourself:
+          </p>
+          <div class="table-wrap">
+            <table class="styled-table">
+              <thead><tr><th>Event</th><th>SDK type</th><th>Carries</th></tr></thead>
+              <tbody>
+                <tr><td><code class="code-inline">message.start</code></td><td><code class="code-inline">MessageStart</code></td><td><code class="code-inline">id</code>, <code class="code-inline">model</code>, <code class="code-inline">thread_id</code> (null for stateless chat)</td></tr>
+                <tr><td><code class="code-inline">message.delta</code></td><td><code class="code-inline">MessageDelta</code></td><td><code class="code-inline">delta</code> &mdash; one text fragment</td></tr>
+                <tr><td><code class="code-inline">message.done</code></td><td><code class="code-inline">MessageDone</code></td><td><code class="code-inline">content</code> and <code class="code-inline">usage</code></td></tr>
+                <tr><td><code class="code-inline">error</code></td><td>raises</td><td>the matching exception class</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="code-block">
+<pre>from tai_sdk.types import MessageDelta, MessageDone
+
+stream = client.chat.stream(
+    model="tfmf",
+    messages=[{"role": "user", "content": "Count to five."}],
+)
+
+for event in stream:
+    if isinstance(event, MessageDelta):
+        print(event.delta, end="", flush=True)
+    elif isinstance(event, MessageDone):
+        print("\n%d tokens" % event.usage.output_tokens)</pre>
+          </div>
+          <p class="note">
+            Breaking out of the loop early is safe: the HTTP response is closed for you, and any
+            text already generated is still recorded and billed.
+          </p>
+
+          <h2 id="assistants">Assistants</h2>
+          <p>
+            An assistant stores a model plus system instructions, so you reuse a configuration
+            instead of resending it. <code class="code-inline">POST /api/v1/assistants</code>
+          </p>
+
+          <div class="code-block">
+<pre>assistant = client.assistants.create(
+    model="tfmf",                                  # required
+    name="Tutor",
+    instructions="You are a patient tutor. Answer briefly.",
+    metadata={"team": "education"},                # optional, flat strings
+)
+
+print(assistant.id)          # asst_...
+print(assistant.created_at)</pre>
+          </div>
+
+          <div class="table-wrap">
+            <table class="styled-table">
+              <thead><tr><th>Method</th><th>SDK</th><th>Endpoint</th></tr></thead>
+              <tbody>
+                <tr><td>Create</td><td><code class="code-inline">client.assistants.create(model=, name=, instructions=, metadata=)</code></td><td><code class="code-inline">POST /api/v1/assistants</code></td></tr>
+                <tr><td>Retrieve</td><td><code class="code-inline">client.assistants.get(id)</code></td><td><code class="code-inline">GET /api/v1/assistants/{id}</code></td></tr>
+                <tr><td>Update</td><td><code class="code-inline">client.assistants.update(id, instructions=...)</code></td><td><code class="code-inline">PATCH /api/v1/assistants/{id}</code></td></tr>
+                <tr><td>List</td><td><code class="code-inline">client.assistants.list(limit=, after=)</code></td><td><code class="code-inline">GET /api/v1/assistants</code></td></tr>
+                <tr><td>Delete</td><td><code class="code-inline">client.assistants.delete(id)</code></td><td><code class="code-inline">DELETE /api/v1/assistants/{id}</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="note">
+            Deleting an assistant detaches it from any threads rather than deleting them. A thread
+            keeps its own model, so it stays usable.
+          </p>
+
+          <h2 id="threads">Threads</h2>
+          <p>
+            A thread is a stored conversation. You never resend history &mdash; that is the whole
+            point. <code class="code-inline">POST /api/v1/threads</code>
+          </p>
+
+          <div class="code-block">
+<pre>thread = client.threads.create(
+    assistant_id=assistant.id,     # or model="tfmf"
+    title="LoRA questions",
+)
+print(thread.id)                   # thrd_...</pre>
+          </div>
+
+          <div class="table-wrap">
+            <table class="styled-table">
+              <thead><tr><th>Method</th><th>SDK</th></tr></thead>
+              <tbody>
+                <tr><td>Create</td><td><code class="code-inline">client.threads.create(assistant_id=, model=, title=, metadata=)</code></td></tr>
+                <tr><td>Retrieve</td><td><code class="code-inline">client.threads.get(id)</code></td></tr>
+                <tr><td>Update</td><td><code class="code-inline">client.threads.update(id, title=, assistant_id=, model=, metadata=)</code></td></tr>
+                <tr><td>List</td><td><code class="code-inline">client.threads.list(limit=, after=)</code></td></tr>
+                <tr><td>Delete</td><td><code class="code-inline">client.threads.delete(id)</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h2 id="messages">Messages</h2>
+          <p>
+            One call appends your message <em>and</em> generates the reply, returning both so you
+            do not need a second round trip.
+            <code class="code-inline">POST /api/v1/threads/{id}/messages</code>
+          </p>
+
+          <div class="code-block">
+<pre>exchange = client.threads.messages.create(
+    thread.id,
+    content="What does rank mean in LoRA?",
+    temperature=0.3,
+    max_output_tokens=256,
+)
+
+print(exchange.user_message.content)
+print(exchange.assistant_message.content)
+print(exchange.usage.cost_cny)</pre>
+          </div>
+
+          <p>Or stream it, exactly like chat:</p>
+          <div class="code-block">
+<pre>for event in client.threads.messages.create(thread.id, content="Go on", stream=True):
+    ...</pre>
+          </div>
+
+          <p>Reading history back:</p>
+          <div class="code-block">
+<pre>page = client.threads.messages.list(thread.id, limit=20, order="asc")
+for message in page.data:
+    print(message.role, message.content[:60])</pre>
+          </div>
+
+          <h2 id="pagination">Pagination</h2>
+          <p>
+            Every list endpoint takes <code class="code-inline">limit</code> (1&ndash;100, default 20)
+            and <code class="code-inline">after</code> (an object id), returns newest first, and
+            reports whether more exist:
+          </p>
+          <div class="code-block">
+<pre>page = client.assistants.list(limit=2)
+print(len(page.data), page.has_more)
+
+while page.has_more:
+    page = client.assistants.list(limit=2, after=page.last_id)
+    print(len(page.data), page.has_more)</pre>
+          </div>
+
+          <h2 id="models">Models</h2>
+          <div class="table-wrap">
+            <table class="styled-table">
+              <thead><tr><th>Model</th><th>Description</th><th>Input / Output per 1M</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td><strong>GTC-2.5 mini</strong><br /><code class="code-inline">gtc-2.5-mini</code></td><td>Lightweight 64M base model</td><td>¥0.5 / ¥1</td><td><span class="badge green">Live</span></td></tr>
+                <tr><td><strong>TFMF</strong><br /><code class="code-inline">tfmf</code></td><td>General foundation model on Qwen 3.5-4B (INT8)</td><td>¥0.5 / ¥3</td><td><span class="badge green">Live</span></td></tr>
+                <tr><td><strong>Giggle</strong><br /><code class="code-inline">giggle</code></td><td>General companion model (TFMF + LoRA)</td><td>¥1 / ¥5</td><td><span class="badge amber">In training</span></td></tr>
+                <tr><td><strong>Bro</strong><br /><code class="code-inline">bro</code></td><td>Companion model (TFMF + LoRA)</td><td>¥1 / ¥5</td><td><span class="badge amber">In training</span></td></tr>
+                <tr><td><strong>Sweetie</strong><br /><code class="code-inline">sweetie</code></td><td>Companion model (TFMF + LoRA)</td><td>¥1 / ¥5</td><td><span class="badge amber">In training</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Query the live list at runtime rather than hard-coding prices:</p>
+          <div class="code-block">
+<pre>for model in client.models.list():          # iterable, or use .data
+    print(model.id, model.live, model.context_window,
+          model.input_cny_per_1m, model.output_cny_per_1m)
+
+tfmf = client.models.retrieve("tfmf")      # raises ModelNotFoundError if unknown</pre>
+          </div>
+          <p>
+            Using a model that exists but is still training returns
+            <code class="code-inline">409 model_not_available</code>.
+          </p>
+
           <h2 id="usage">Usage</h2>
           <div class="code-block">
 <pre>u = client.usage.retrieve()
-print(u.requests_total, u.tokens_total, u.balance_cny)
-print(u.by_model)</pre>
+
+print(u.requests_this_month, u.tokens_this_month)
+print(u.cost_cny_this_month, u.balance_cny)
+print(u.free_tokens)          # {"granted": 5000, "used": .., "remaining": ..}
+print(u.by_model)             # per-model request, token and cost breakdown</pre>
           </div>
 
-          <h2 id="errors">Errors &amp; Rate Limits</h2>
+          <h2 id="billing">Billing &amp; Codes</h2>
           <p>
-            Every failure returns a stable <code class="code-inline">code</code> alongside a
-            human-readable message, and the SDK turns it into a typed exception:
+            The API is prepaid: every new account starts with
+            <strong>5,000 free tokens</strong>, then draws on its balance. Usage is billed per
+            token at the prices above.
           </p>
+          <p>
+            When the free tokens are gone and the balance is empty, generation stops with
+            <code class="code-inline">402 insufficient_balance</code>, and the response carries the
+            real numbers:
+          </p>
+          <div class="code-block">
+<pre>{
+  "code": "insufficient_balance",
+  "message": "Your free tokens are used up and your balance is empty. ...",
+  "balance_cny": 0.0,
+  "free_tokens_remaining": 0
+}</pre>
+          </div>
+
+          <p>
+            <strong>Redeem codes</strong> are the simplest way to top up. They are sold or handed
+            out however is convenient, and redeemed on the
+            <a href="dashboard.html">Dashboard</a>:
+          </p>
+          <div class="code-block">
+<pre>TAI-XXXX-XXXX-XXXX</pre>
+          </div>
+          <p>
+            Codes are not case sensitive and ignore spaces and dashes, so
+            <code class="code-inline">tai - xxxx - xxxx - xxxx</code> works too.
+          </p>
+
+          <h2 id="errors">Errors</h2>
+          <p>
+            Every failure returns a stable <code class="code-inline">code</code> next to a
+            human-readable message. The SDK maps each code to a typed exception, so you never
+            match on strings:
+          </p>
+          <div class="table-wrap">
+            <table class="styled-table">
+              <thead><tr><th>HTTP</th><th>code</th><th>SDK exception</th><th>Means</th></tr></thead>
+              <tbody>
+                <tr><td>401</td><td><code class="code-inline">missing_api_key</code> / <code class="code-inline">invalid_api_key</code></td><td><code class="code-inline">AuthenticationError</code></td><td>No key, or unknown / revoked.</td></tr>
+                <tr><td>402</td><td><code class="code-inline">insufficient_balance</code></td><td><code class="code-inline">InsufficientBalanceError</code></td><td>Free tokens used up and balance empty.</td></tr>
+                <tr><td>403</td><td><code class="code-inline">account_disabled</code></td><td><code class="code-inline">PermissionDeniedError</code></td><td>Account switched off.</td></tr>
+                <tr><td>404</td><td><code class="code-inline">not_found</code></td><td><code class="code-inline">NotFoundError</code></td><td>No such object, or it belongs to another account.</td></tr>
+                <tr><td>404</td><td><code class="code-inline">model_not_found</code></td><td><code class="code-inline">ModelNotFoundError</code></td><td>Unknown model id.</td></tr>
+                <tr><td>409</td><td><code class="code-inline">model_not_available</code></td><td><code class="code-inline">ModelNotAvailableError</code></td><td>Exists but still training.</td></tr>
+                <tr><td>422</td><td><code class="code-inline">invalid_request</code></td><td><code class="code-inline">InvalidRequestError</code></td><td>Bad field; <code class="code-inline">param</code> names it.</td></tr>
+                <tr><td>429</td><td><code class="code-inline">rate_limited</code></td><td><code class="code-inline">RateLimitError</code></td><td>Slow down.</td></tr>
+                <tr><td>502</td><td><code class="code-inline">backend_unavailable</code></td><td><code class="code-inline">BackendUnavailableError</code></td><td>The model server failed or is unreachable.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="code-block">
+<pre>from tai_sdk import TAI, InsufficientBalanceError, ModelNotAvailableError
+
+try:
+    client.chat.create(model="giggle", messages=[{"role": "user", "content": "hi"}])
+except ModelNotAvailableError as exc:
+    print(exc.code, exc.message)          # model_not_available ...
+
+except InsufficientBalanceError as exc:
+    print(exc.balance_cny)                # whatever the server reported</pre>
+          </div>
+          <p>
+            Transport problems raise <code class="code-inline">APIConnectionError</code> or
+            <code class="code-inline">APITimeoutError</code>, and both name the base URL they
+            tried, which is what you want when the API host moves.
+          </p>
+
+          <h2 id="limits">Limits &amp; Reliability</h2>
           <ul>
-            <li><code class="code-inline">401 invalid_api_key</code> → <code class="code-inline">AuthenticationError</code></li>
-            <li><code class="code-inline">404 model_not_found</code> → <code class="code-inline">ModelNotFoundError</code></li>
-            <li><code class="code-inline">409 model_not_available</code> → <code class="code-inline">ModelNotAvailableError</code> (still training)</li>
-            <li><code class="code-inline">422 invalid_request</code> → <code class="code-inline">BadRequestError</code></li>
+            <li><strong>Context:</strong> 8,192 tokens per request. Prompt plus completion must fit.</li>
+            <li><strong>Message size:</strong> 32,000 characters; 100 messages per request.</li>
+            <li><strong>Metadata:</strong> 16 keys, flat string values.</li>
+            <li><strong>Retries:</strong> the SDK retries connection errors and 429/5xx up to
+              <code class="code-inline">max_retries</code> (default 2) with exponential backoff,
+              honouring <code class="code-inline">Retry-After</code>. POSTs are only retried when
+              the request provably never left the client, so a retry cannot double-charge.</li>
           </ul>
           <p class="note">
-            Per-key rate limits and balance enforcement are not switched on yet — they are the
-            next thing we are building. Treat the platform as a preview.
+            Per-key rate limits are not switched on yet, and neither is automatic charging for
+            overage &mdash; the platform is a research preview. Balance <em>is</em> enforced.
           </p>
+
+          <h2 id="sdk">SDK Reference</h2>
+          <div class="table-wrap">
+            <table class="styled-table">
+              <thead><tr><th>Namespace</th><th>Methods</th></tr></thead>
+              <tbody>
+                <tr><td><code class="code-inline">client.chat</code></td><td><code class="code-inline">create()</code>, <code class="code-inline">stream()</code></td></tr>
+                <tr><td><code class="code-inline">client.assistants</code></td><td><code class="code-inline">create()</code>, <code class="code-inline">get()</code>, <code class="code-inline">update()</code>, <code class="code-inline">list()</code>, <code class="code-inline">delete()</code></td></tr>
+                <tr><td><code class="code-inline">client.threads</code></td><td><code class="code-inline">create()</code>, <code class="code-inline">get()</code>, <code class="code-inline">update()</code>, <code class="code-inline">list()</code>, <code class="code-inline">delete()</code></td></tr>
+                <tr><td><code class="code-inline">client.threads.messages</code></td><td><code class="code-inline">create()</code> (alias <code class="code-inline">add()</code>), <code class="code-inline">list()</code></td></tr>
+                <tr><td><code class="code-inline">client.models</code></td><td><code class="code-inline">list()</code>, <code class="code-inline">retrieve()</code></td></tr>
+                <tr><td><code class="code-inline">client.usage</code></td><td><code class="code-inline">retrieve()</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Constructor options:</p>
+          <div class="code-block">
+<pre>TAI(
+    api_key=None,            # default: TAI_API_KEY
+    base_url=None,           # default: discovered (see Introduction)
+    timeout=30.0,
+    max_retries=2,
+    discover=True,           # set False to skip the discovery document
+    discovery_url=None,      # default: TAI_DISCOVERY_URL
+    discovery_timeout=3.0,
+)</pre>
+          </div>
+
+          <h2 id="async">Async Client</h2>
+          <p>
+            <code class="code-inline">AsyncTAI</code> exposes the same methods and response types;
+            only the call sites change.
+          </p>
+          <div class="code-block">
+<pre>import asyncio
+from tai_sdk import AsyncTAI
+
+async def main():
+    async with AsyncTAI() as client:
+        reply = await client.chat.create(
+            model="tfmf",
+            messages=[{"role": "user", "content": "Hello!"}],
+        )
+        print(reply.content)
+
+        # Note: no `await` here. The async client returns an async generator,
+        # so it is consumed with `async for` directly.
+        stream = client.chat.stream(
+            model="tfmf",
+            messages=[{"role": "user", "content": "Count to three."}],
+        )
+        async for event in stream:
+            ...
+
+asyncio.run(main())</pre>
+          </div>
+
+          <h2 id="next">Next Steps</h2>
+          <ul>
+            <li>Grab a key in the <a href="dashboard.html">Dashboard</a> and make your first call.</li>
+            <li>See <a href="pricing.html">Pricing</a> for the full price list and a cost calculator.</li>
+            <li>Read the <a href="https://github.com/LTYLeo/platform/blob/main/sdk/README.md" target="_blank" rel="noopener">SDK README</a> for the same reference as a single document.</li>
+          </ul>
         </article>
       </div>
     </section>
@@ -313,6 +603,48 @@ print(u.by_model)</pre>
     </div>
   </footer>
   <!-- i18n: English lives in the markup, locales/zh.js supplies the Chinese strings -->
+  <script>
+    /* Documentation scroll-spy: highlight the sidebar entry for the section
+       currently on screen. Without this the sidebar keeps saying "Introduction"
+       no matter how far down the reader is. */
+    (function () {
+      var links = Array.prototype.slice.call(
+        document.querySelectorAll('.docs-sidebar a[href^="#"]')
+      );
+      var targets = links
+        .map(function (a) { return document.getElementById(a.getAttribute('href').slice(1)); })
+        .filter(Boolean);
+      if (!targets.length) return;
+
+      function setActive(id) {
+        links.forEach(function (a) {
+          a.classList.toggle('active', a.getAttribute('href') === '#' + id);
+        });
+      }
+
+      // Trigger when a heading is in the upper third of the viewport, so the
+      // highlight changes as the heading reaches reading position.
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) setActive(entry.target.id);
+        });
+      }, { rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+
+      targets.forEach(function (el) { observer.observe(el); });
+
+      // The last section may be too short to ever reach the trigger band, so
+      // fall back to the closest heading on scroll.
+      window.addEventListener('scroll', function () {
+        var best = null, bestTop = -Infinity;
+        targets.forEach(function (el) {
+          var top = el.getBoundingClientRect().top;
+          if (top <= window.innerHeight * 0.35 && top > bestTop) { bestTop = top; best = el; }
+        });
+        if (best) setActive(best.id);
+      }, { passive: true });
+    })();
+  </script>
+
   <script src="config.js"></script>
   <script src="locales/zh.js"></script>
   <script src="i18n.js"></script>

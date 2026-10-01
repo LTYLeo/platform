@@ -474,3 +474,15 @@ split chunk boundary and a mid-stream `error` event), error mapping for
 ## License
 
 MIT © TAI Research — see [LICENSE](LICENSE).
+
+## Verifying the docs
+
+`sdk/examples/docs_walkthrough.py` runs every example from `docs.html` against a
+live server. Use it after changing either the SDK or the docs — two documented
+calls looked correct but never worked until this script existed
+(`reply.output.content`, and `await` before the async `chat.stream`).
+
+```bash
+TAI_API_KEY=$(cat /tmp/dv.key) TAI_BASE_URL=http://127.0.0.1:8150 \
+  python3 sdk/examples/docs_walkthrough.py
+```
