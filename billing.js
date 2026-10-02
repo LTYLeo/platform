@@ -62,6 +62,7 @@
     root.className = 'modal-overlay';
     root.id = 'billingOverlay';
     root.hidden = true;
+    root.classList.add('hidden');
     root.innerHTML =
       '<div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="billingTitle">' +
         '<button class="modal-close" id="billingClose" aria-label="Close">&times;</button>' +
@@ -103,7 +104,7 @@
     root.querySelector('#billingClose').addEventListener('click', close);
     root.addEventListener('click', function (e) { if (e.target === root) close(); });
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && !root.hidden) close();
+      if (e.key === 'Escape' && !root.classList.contains('hidden')) close();
     });
 
     root.querySelectorAll('.billing-tab').forEach(function (tab) {
@@ -351,7 +352,10 @@
 
   function open(tab) {
     build();
+    // Both: the attribute is what assistive technology reads, the class is what
+    // actually removes it from the layer.
     root.hidden = false;
+    root.classList.remove('hidden');
     showTab(tab || 'credit');
     if (window.TAII18n && window.TAII18n.translate) window.TAII18n.translate(root);
     // Amount presets start on nothing selected so the placeholder is meaningful.
@@ -363,7 +367,12 @@
 
   function close() {
     stopPolling();
-    if (root) root.hidden = true;
+    if (!root) return;
+    // `.modal-overlay` sets `display: flex`, which outranks the UA rule for
+    // `[hidden]` - so setting the attribute alone left the dialog on screen with
+    // a close button that appeared to do nothing.
+    root.classList.add('hidden');
+    root.hidden = true;
   }
 
   window.TAIBilling = { open: open, close: close };
