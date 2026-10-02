@@ -512,7 +512,12 @@ def _sigma_payload(model: str, messages: list[dict[str, Any]], temperature: floa
     still succeeds, it just ignores what the caller asked for.
     """
     payload = {
+        # `text` is the flattened form the torch backends expect. `messages` is
+        # the structured form: a chat model handed "user: hi" as a single user
+        # turn sees the role prefix as part of the sentence, which is not what
+        # the caller wrote and shows up in its reasoning.
         "text": prompt_text(messages),
+        "messages": messages,
         "model": _sigma_model(model),
         "max_len": max_output_tokens,
         "temperature": temperature,

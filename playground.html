@@ -167,6 +167,7 @@
             </select>
             <p class="muted tiny" style="margin-top:8px;">
               TFMF can think before answering. Off by default; on costs extra tokens.
+              Switching models starts a new conversation.
             </p>
           </div>
 
@@ -534,18 +535,25 @@
       localStorage.setItem(KEY_STORE, (keyInput.value || '').trim());
     });
     tempInput.addEventListener('input', function () { tempValue.innerText = tempInput.value; });
-    modelSelect.addEventListener('change', syncModelFields);
+    modelSelect.addEventListener('change', function () {
+      syncModelFields();
+      // History is model-specific, and a smaller model imitates its own earlier
+      // turns strongly enough to keep repeating a wrong answer. Starting clean on
+      // a model switch avoids carrying that over.
+      clearChat();
+    });
     sendBtn.addEventListener('click', send);
     chatInput.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
     });
-    $('clearBtn').addEventListener('click', function () {
+    function clearChat() {
       messages = [];
       chatScroll.innerHTML = '';
       if (chatEmpty) { chatEmpty.style.display = ''; chatScroll.appendChild(chatEmpty); }
       usageLine.innerText = '—';
       codeBlock.style.display = 'none';
-    });
+    }
+    $('clearBtn').addEventListener('click', clearChat);
     $('codeBtn').addEventListener('click', function () {
       updateCode();
       codeBlock.style.display = codeBlock.style.display === 'none' ? 'block' : 'none';
