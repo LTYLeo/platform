@@ -38,7 +38,7 @@ import sqlite3
 from datetime import datetime, timedelta
 from typing import Protocol
 
-from server import db
+from server import db, plans
 
 # --------------------------------------------------------------------------- #
 # Ids and codes
@@ -53,7 +53,7 @@ CODE_GROUPS = 3
 CODE_GROUP_LEN = 4
 CODE_PREFIX = "TAI"
 
-PURPOSES = ("api_credit", "sigma_pro")
+PURPOSES = ("api_credit", "sigma_plus", "sigma_pro")
 PROVIDERS = ("manual", "afdian", "wechat")
 
 
@@ -391,8 +391,10 @@ def fulfil_order(conn: sqlite3.Connection, order: sqlite3.Row) -> dict:
         )
         result["credited_cny"] = float(order["amount_cny"])
         result["balance_cny"] = balance
-    elif order["purpose"] == "sigma_pro":
-        result.update(grant_pro(conn, int(order["user_id"]), int(order["months"]) or 1))
+    elif order["purpose"] in plans.SIGMA_PURPOSES:
+        result.update(grant_plan(conn, int(order["user_id"]),
+                                 plans.SIGMA_PURPOSES[order["purpose"]],
+                                 int(order["months"]) or 1))
 
     now = db.iso(db.utcnow())
     conn.execute(
@@ -622,7 +624,12 @@ def get_subscription(conn: sqlite3.Connection, user_id: int) -> dict:
 
 
 def grant_pro(conn: sqlite3.Connection, user_id: int, months: int) -> dict:
-    """Extend (or start) a pro subscription.
+    """Extend (or start) a pro subscription. Kept for existing callers."""
+    return grant_plan(conn, user_id, "pro", months)
+
+
+def grant_plan(conn: sqlite3.Connection, user_id: int, plan: str, months: int) -> dict:
+    """Extend (or start) a subscription at ``plan``.
 
     Extending stacks on top of an unexpired subscription rather than resetting
     it, so buying two months twice gives four months.
@@ -633,7 +640,10 @@ def grant_pro(conn: sqlite3.Connection, user_id: int, months: int) -> dict:
     now = db.utcnow()
 
     base = now
-    if current and current["plan"] == "pro" and current["expires_at"]:
+    # Stacking only makes sense on the same tier. Upgrading from plus to pro
+    # should start a pro month rather than extend a plus one, so an existing
+    # subscription at a different plan is replaced rather than added to.
+    if current and current["plan"] == plan and current["expires_at"]:
         try:
             existing = datetime.fromisoformat(current["expires_at"])
             if existing > now:
@@ -718,4 +728,7 @@ def entitlements(conn: sqlite3.Connection, user_id: int) -> dict:
         },
         "can_generate": allowed,
         "reason": reason,
+        # The host enforces from this rather than keeping its own copy of the
+        # rules, so changing a tier here changes behaviour everywhere at once.
+        "limits": plans.enforce(sub["plan"]),
     }

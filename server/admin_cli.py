@@ -299,12 +299,12 @@ def main() -> None:
     p.set_defaults(func=cmd_grant_credit)
 
     p = sub.add_parser("set-plan", help="set the Sigma plan")
-    p.add_argument("email"); p.add_argument("plan", choices=["free", "pro", "admin"])
+    p.add_argument("email"); p.add_argument("plan", choices=["free", "plus", "pro", "admin"])
     p.add_argument("months", nargs="?", type=int, default=1)
     p.set_defaults(func=cmd_set_plan)
 
     p = sub.add_parser("gen-codes", help="mint redeem codes")
-    p.add_argument("kind", choices=["api_credit", "sigma_pro"])
+    p.add_argument("kind", choices=["api_credit", "sigma_plus", "sigma_pro"])
     p.add_argument("count", type=int)
     p.add_argument("--amount", type=float, default=10.0, help="for api_credit")
     p.add_argument("--months", type=int, default=1, help="for sigma_pro")

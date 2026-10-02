@@ -21,7 +21,7 @@ import sqlite3
 from fastapi import APIRouter, Depends, Header, Request, Response, status
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from server import billing, db, security
+from server import billing, plans, db, security
 from server.deps import current_user, fail, require_admin
 
 billing_router = APIRouter(prefix="/api/billing", tags=["billing"])
@@ -167,6 +167,12 @@ class SetPlanBody(BaseModel):
 # --------------------------------------------------------------------------- #
 # User-facing billing
 # --------------------------------------------------------------------------- #
+
+@billing_router.get("/plans")
+def list_plans():
+    """The tier catalogue. Public: it is the price list."""
+    return {"object": "list", "data": plans.public_catalog()}
+
 
 @billing_router.get("/entitlements")
 def my_entitlements(
@@ -532,6 +538,74 @@ def internal_entitlements_by_query(
 # sync and no second copy to drift.
 #
 # Email is the identifier on purpose: usernames collide, emails do not.
+
+# --------------------------------------------------------------------------- #
+# Internal: subscriptions bought from inside Sigma
+# --------------------------------------------------------------------------- #
+
+class SigmaUpgradeBody(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    email: str
+    plan: str
+
+    @field_validator("plan")
+    @classmethod
+    def _known_plan(cls, value: str) -> str:
+        if value not in plans.SIGMA_PURPOSES.values():
+            raise ValueError("plan must be one of %s" % sorted(set(plans.SIGMA_PURPOSES.values())))
+        return value
+
+
+@internal_router.get("/plans")
+def internal_plans(_: None = Depends(require_internal)):
+    """The tiers, for the upgrade dialog inside Sigma."""
+    return {"object": "list", "data": plans.public_catalog()}
+
+
+@internal_router.post("/upgrade", status_code=status.HTTP_201_CREATED)
+def internal_upgrade(
+    body: SigmaUpgradeBody,
+    conn: sqlite3.Connection = Depends(db.get_db),
+    _: None = Depends(require_internal),
+):
+    """Start a subscription purchase for a Sigma user.
+
+    Sigma authenticates its own users and holds no platform session, so it cannot
+    call the session-based order endpoints on their behalf. It proves who it is
+    with the internal token and names the account by email, the same way the
+    entitlements lookup already works.
+
+    The order is created and the payment intent returned in one call: the caller
+    wants to show a payment step, and two round trips would only add a state to
+    get stuck in.
+    """
+    user = _user_by_email(conn, body.email)
+    if user is None:
+        raise fail(status.HTTP_404_NOT_FOUND, "no_platform_account",
+                   "No developer platform account for %s. Register there first." % body.email)
+
+    purpose = plans.PURPOSE_BY_PLAN.get(body.plan)
+    if purpose is None:
+        raise fail(status.HTTP_422_UNPROCESSABLE_ENTITY, "invalid_request", "Unknown plan")
+
+    order = billing.create_order(
+        conn, int(user["id"]), purpose,
+        plans.monthly_price(purpose), months=1, provider=None,
+    )
+
+    provider = PROVIDERS.get(order["provider"])
+    intent = None
+    warning = None
+    try:
+        intent = dict(provider.create_intent(order)) if provider else None
+    except (RuntimeError, NotImplementedError) as exc:
+        # The order still exists; only the payment step is unavailable. Saying so
+        # beats failing the whole request and leaving the user with nothing.
+        warning = str(exc)
+
+    return {"order": order_out(order), "intent": intent, "warning": warning}
+
 
 @internal_router.post("/verify")
 def internal_verify(
