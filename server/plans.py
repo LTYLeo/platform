@@ -20,7 +20,7 @@ a paying tier.
 from __future__ import annotations
 
 #: Cheapest first. Used to describe a tier without repeating the list.
-MODEL_CHOICES = ("gtc25", "gtc25_400m", "gtc25v", "gtc25o", "esft", "large", "tfmf")
+MODEL_CHOICES = ("gtc25", "gtc25_400m", "gtc25v", "gtc25o", "tfmf")
 
 #: On Sigma the same weights are sold under a product name; the developer
 #: platform's API keeps the research name. One model, two audiences.
@@ -29,7 +29,7 @@ SIGMA_MODEL_NAMES = {"tfmf": "GTC-2.5 Turbo"}
 #: Models that are still research rather than product. Reachable on Pro within
 #: limits, and not below it. Kept separate from MODEL_CHOICES because "all models"
 #: for Pro has to mean all of them, previews included.
-FRONTIER_MODELS = ("large",)
+FRONTIER_MODELS = ()
 
 PLANS: dict[str, dict] = {
     "free": {
