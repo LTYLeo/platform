@@ -34,6 +34,9 @@ from __future__ import annotations
 import json
 import secrets
 import re
+import base64
+import urllib.parse
+import urllib.request
 import sqlite3
 from datetime import datetime, timedelta
 from typing import Protocol
@@ -54,7 +57,7 @@ CODE_GROUP_LEN = 4
 CODE_PREFIX = "TAI"
 
 PURPOSES = ("api_credit", "sigma_plus", "sigma_pro")
-PROVIDERS = ("manual", "afdian", "wechat")
+PROVIDERS = ("manual", "alipay", "afdian", "wechat")
 
 
 def new_order_id() -> str:
@@ -243,6 +246,171 @@ class AfdianProvider:
         return True, order.get("out_trade_no"), {**order, "_unmatched": True}
 
 
+class AlipayProvider:
+    """Alipay face-to-face payment (当面付). The one route open to individuals.
+
+    Alipay's own rules: 当面付 needs only shop details - name, a photo, an
+    address. A business licence is optional and only lifts the ceiling. Without
+    one the limits are 2000 CNY per transaction and 20000 per day, which is far
+    above anything a subscription at this scale will reach.
+
+    The alternatives are worse for a small operator. Website payment requires
+    ICP filing, which needs a domain and hosting in mainland China; without a
+    licence it is capped at 50 CNY per transaction. APP payment needs a store
+    listing.
+
+    The chain is: precreate returns a QR payload, the payer scans it, and Alipay
+    posts a signed notification to the callback URL. Set TAI_ALIPAY_APP_ID and
+    TAI_ALIPAY_PRIVATE_KEY to enable it; TAI_ALIPAY_PUBLIC_KEY is needed to
+    verify the notification and without it payments cannot be matched
+    automatically.
+    """
+
+    name = "alipay"
+
+    GATEWAY = "https://openapi.alipay.com/gateway.do"
+    NOTIFY_URL = "https://openapi.alipay.com/gateway.do"
+
+    def __init__(self, app_id: str | None = None, private_key: str | None = None,
+                 public_key: str | None = None, notify_url: str | None = None):
+        self.app_id = (app_id or "").strip() or None
+        self.private_key = (private_key or "").strip() or None
+        self.public_key = (public_key or "").strip() or None
+        self.notify_url = (notify_url or "").strip() or None
+
+    @property
+    def configured(self) -> bool:
+        return bool(self.app_id and self.private_key)
+
+    # -- signing ---------------------------------------------------------- #
+
+    @staticmethod
+    @staticmethod
+    def _pem_candidates(pem: str, headers: tuple) -> list:
+        """Every PEM form the supplied key could be, best guess first.
+
+        Two things vary and both are the operator's to get wrong. The console
+        hands out the key *body* without header lines. And the body itself may be
+        PKCS#1 (``RSA PRIVATE KEY``, what Alipay's own tool generates) or PKCS#8
+        (``PRIVATE KEY``, what openssl and most libraries emit now). Accepting
+        only one means "invalid key" for half the people following the docs.
+        """
+        if "-----BEGIN" in pem:
+            return [pem.encode("utf-8")]
+        body = "\n".join(pem[i:i + 64] for i in range(0, len(pem), 64))
+        return [("\n".join(["-----BEGIN " + h + "-----", body, "-----END " + h + "-----"]) + "\n").encode("utf-8")
+                for h in headers]
+
+
+    def _sign(self, params: dict) -> str:
+        from cryptography.hazmat.primitives import hashes, serialization
+        from cryptography.hazmat.primitives.asymmetric import padding
+
+        # Alipay signs the sorted, non-empty parameters joined as k=v&k=v.
+        items = sorted((k, v) for k, v in params.items() if v not in (None, ""))
+        content = "&".join("%s=%s" % (k, v) for k, v in items)
+        key = None
+        for candidate in self._pem_candidates(self.private_key, ("RSA PRIVATE KEY", "PRIVATE KEY")):
+            try:
+                key = serialization.load_pem_private_key(candidate, password=None)
+                break
+            except (ValueError, TypeError):
+                continue
+        if key is None:
+            raise RuntimeError("TAI_ALIPAY_PRIVATE_KEY is not a usable RSA private key")
+        signature = key.sign(content.encode("utf-8"), padding.PKCS1v15(), hashes.SHA256())
+        return base64.b64encode(signature).decode("ascii")
+
+    def _verify(self, params: dict) -> bool:
+        from cryptography.exceptions import InvalidSignature
+        from cryptography.hazmat.primitives import hashes, serialization
+        from cryptography.hazmat.primitives.asymmetric import padding
+
+        if not self.public_key:
+            return False
+        received = params.get("sign", "")
+        items = sorted((k, v) for k, v in params.items() if k not in ("sign", "sign_type") and v not in (None, ""))
+        content = "&".join("%s=%s" % (k, v) for k, v in items)
+        try:
+            key = None
+            for candidate in self._pem_candidates(self.public_key, ("PUBLIC KEY", "RSA PUBLIC KEY")):
+                try:
+                    key = serialization.load_pem_public_key(candidate)
+                    break
+                except (ValueError, TypeError):
+                    continue
+            if key is None:
+                return False
+            key.verify(base64.b64decode(received), content.encode("utf-8"),
+                       padding.PKCS1v15(), hashes.SHA256())
+            return True
+        except (InvalidSignature, ValueError, TypeError):
+            return False
+
+    # -- provider interface ------------------------------------------------ #
+
+    def create_intent(self, order: sqlite3.Row) -> PaymentIntent:
+        if not self.configured:
+            raise RuntimeError(
+                "Alipay is not configured: set TAI_ALIPAY_APP_ID and TAI_ALIPAY_PRIVATE_KEY")
+
+        biz = {
+            "out_trade_no": order["id"],
+            "total_amount": "%.2f" % float(order["amount_cny"]),
+            "subject": "TAI Sigma subscription" if order["purpose"].startswith("sigma")
+                       else "TAI API credit",
+        }
+        params = {
+            "app_id": self.app_id,
+            "method": "alipay.trade.precreate",
+            "charset": "utf-8",
+            "sign_type": "RSA2",
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "version": "1.0",
+            "biz_content": json.dumps(biz, ensure_ascii=False, separators=(",", ":")),
+        }
+        if self.notify_url:
+            params["notify_url"] = self.notify_url
+        params["sign"] = self._sign(params)
+
+        body = urllib.parse.urlencode(params).encode("utf-8")
+        req = urllib.request.Request(self.GATEWAY, data=body, method="POST",
+                                     headers={"Content-Type": "application/x-www-form-urlencoded;charset=utf-8"})
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                payload = json.loads(resp.read().decode("utf-8"))
+        except Exception as exc:
+            raise RuntimeError("Alipay precreate failed: %s: %s" % (type(exc).__name__, exc))
+
+        result = payload.get("alipay_trade_precreate_response") or {}
+        if result.get("code") != "10000" or not result.get("qr_code"):
+            raise RuntimeError("Alipay refused the order: %s %s"
+                               % (result.get("code"), result.get("sub_msg") or result.get("msg")))
+
+        return PaymentIntent(
+            kind="qrcode",
+            payload=result["qr_code"],
+            note="Scan with Alipay. The reference is attached to the order automatically.",
+        )
+
+    def verify_callback(self, headers: dict, body: bytes) -> tuple[bool, str | None, dict]:
+        # Alipay posts form-encoded fields, not JSON.
+        try:
+            fields = dict(urllib.parse.parse_qsl(body.decode("utf-8")))
+        except UnicodeDecodeError:
+            return False, None, {}
+
+        if not self._verify(fields):
+            return False, None, {}
+
+        # WAIT_BUYER_PAY means the QR was scanned but not paid; TRADE_SUCCESS is done.
+        if fields.get("trade_status") not in ("TRADE_SUCCESS", "TRADE_FINISHED"):
+            return False, None, fields
+
+        # Unlike Afdian, Alipay echoes our own out_trade_no back.
+        return True, fields.get("trade_no"), {**fields, "_order_id": fields.get("out_trade_no")}
+
+
 class WechatNativeProvider:
     """WeChat Pay Native (scan-to-pay on our own page).
 
@@ -282,7 +450,7 @@ class WechatNativeProvider:
 #: Preference order when the caller does not name a provider. Automated first, so
 #: a configured provider is actually used; `manual` last, because it always
 #: "works" and would otherwise shadow everything above it.
-PROVIDER_PREFERENCE = ("afdian", "wechat", "manual")
+PROVIDER_PREFERENCE = ("alipay", "afdian", "wechat", "manual")
 
 
 def default_provider(providers: dict[str, "PaymentProvider"] | None = None) -> str:
@@ -305,6 +473,12 @@ def build_providers() -> dict[str, PaymentProvider]:
 
     return {
         "manual": ManualProvider(),
+        "alipay": AlipayProvider(
+            app_id=os.getenv("TAI_ALIPAY_APP_ID"),
+            private_key=os.getenv("TAI_ALIPAY_PRIVATE_KEY"),
+            public_key=os.getenv("TAI_ALIPAY_PUBLIC_KEY"),
+            notify_url=os.getenv("TAI_ALIPAY_NOTIFY_URL"),
+        ),
         "afdian": AfdianProvider(
             token=os.getenv("TAI_AFDIAN_TOKEN"),
             user_id=os.getenv("TAI_AFDIAN_USER_ID"),
