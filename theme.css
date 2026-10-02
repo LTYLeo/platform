@@ -224,6 +224,7 @@ nav.site-nav a.btn { color: #ffffff; }
 .btn.block { display: block; width: 100%; text-align: center; }
 .btn[disabled] { opacity: 0.6; cursor: not-allowed; }
 .btn-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.btn-row.center { justify-content: center; }
 
 .icon-btn {
   background: none;

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Status - TAI Developer Platform</title>
+  <title>Privacy &amp; Terms - TAI Developer Platform</title>
   <link rel="icon" href="favicon.png" />
 
   <!-- Locale must be decided before first paint so Chinese users never see an English flash -->
@@ -82,108 +82,178 @@
     </nav>
   </header>
 
-  <main class="container-narrow">
-    <!-- Status hero -->
-    <section class="page-hero" style="text-align:center;">
-      <h1>TAI Platform Status</h1>
-      <p class="lead" style="margin:0 auto;">Real-time information about the status of our services</p>
-    </section>
-
-    <!-- Overall status -->
-    <section>
-      <div class="card text-center" style="padding:32px;">
-        <div class="status-head">
-          <span class="status-indicator status-operational"></span>
-          <h2>All Systems Operational</h2>
-        </div>
-        <p class="muted">All TAI services are running normally.</p>
-        <div class="muted small">
-          Last updated: <span id="lastUpdated">Just now</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- Service Status -->
-    <section>
-      <h2>Service Status</h2>
-      <p class="muted" style="margin-bottom:20px;">
-        Checked live from your browser when this page loads.
-        <span id="statusChecked" class="muted small"></span>
+<main class="container-narrow">
+    <section class="page-hero">
+      <h1>Privacy &amp; Terms</h1>
+      <p class="lead">
+        What we collect, what we do with it, and — just as importantly — what you
+        should not expect from a service run by six students.
       </p>
-      <div class="status-list" id="serviceList">
-        <div class="status-row">
-          <div>
-            <div class="status-name">TAI API</div>
-            <div class="status-desc">Checking…</div>
-          </div>
-          <div class="status-state">
-            <span class="status-indicator status-maintenance"></span>Checking
-          </div>
-        </div>
-      </div>
     </section>
 
-    <!-- Measured, not asserted -->
+    <!-- The most important section on this page, so it comes first. -->
     <section class="section-plain">
-      <div class="section-head">
-        <h2>Measured Metrics</h2>
-        <p>Numbers below come from an actual request made by this page, not from a dashboard we filled in.</p>
-      </div>
-      <div class="grid grid-2 grid-flush">
-        <div class="card">
-          <h3>API Round Trip</h3>
-          <div class="metric-figures">
-            <p>Latest check: <strong id="mLatency">—</strong></p>
-            <p>Checks this session: <strong id="mChecks">0</strong></p>
-          </div>
-          <p class="muted small" style="margin-top:10px;">
-            Time for a health request to reach the API and return, as seen from your network.
-          </p>
-        </div>
-
-        <div class="card">
-          <h3>Your Usage</h3>
-          <div class="metric-figures">
-            <p>Requests this month: <strong id="mRequests">—</strong></p>
-            <p>Tokens this month: <strong id="mTokens">—</strong></p>
-            <p>Success rate: <strong id="mSuccess">—</strong></p>
-          </div>
-          <p class="muted small" style="margin-top:10px;" id="mUsageNote">
-            Sign in to the <a href="dashboard.html">Dashboard</a> to see your own figures.
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <!-- Incident history -->
-    <section class="section-plain">
-      <div class="section-head">
-        <h2>Incident History</h2>
-      </div>
-      <div class="card">
-        <p class="muted" style="margin:0;">
-          No incidents reported. This page previously listed three outages that never
-          occurred; it now reports only what has actually been observed, and there is
-          nothing to report yet.
+      <div class="card" style="border-color: rgba(255,196,0,.35); background: rgba(255,196,0,.05);">
+        <h2 style="margin-top:0; font-size:22px;">
+          <i class="fas fa-flask" style="margin-right:10px; color:#ffc400;"></i>Everything here is a research preview
+        </h2>
+        <p>
+          The Developer Platform, the API and Sigma are all <strong>research
+          previews</strong>. They exist so we can learn, publish what we build, and
+          let people try the models — not to run anyone's business.
+        </p>
+        <p>
+          We are a <strong>high-school team</strong>. This is maintained around
+          schoolwork, exams and holidays, by people who also have homework. There is
+          no on-call rota, no support contract, and nobody watching a dashboard at
+          3am.
+        </p>
+        <p style="margin-bottom:0;"><strong>What that means in practice:</strong></p>
+        <ul class="guideline-list" style="margin-top:10px;">
+          <li><i class="fas fa-triangle-exclamation" style="color:#ffc400;"></i><span>
+            <strong>Long outages are possible.</strong> Days, not minutes. It can go
+            down because a laptop is shut, an exam week starts, a tunnel expires, or
+            a power cut happens.
+          </span></li>
+          <li><i class="fas fa-triangle-exclamation" style="color:#ffc400;"></i><span>
+            <strong>Response to problems is not real-time.</strong> Issues reported
+            today may be looked at next weekend.
+          </span></li>
+          <li><i class="fas fa-triangle-exclamation" style="color:#ffc400;"></i><span>
+            <strong>Breaking changes can happen without much notice.</strong> Model
+            names, limits and request formats may change as we improve things.
+          </span></li>
+          <li><i class="fas fa-ban" style="color:#ff7b72;"></i><span>
+            <strong>Do not build a production service on this.</strong> If you have,
+            or expect to have, a large number of users, please use a provider with a
+            real SLA. We are not one, and we would rather say so now than have you
+            find out during your own outage.
+          </span></li>
+        </ul>
+        <p style="margin-top:16px;">
+          We are continuing to improve the backend and the hardware behind it —
+          better inference machines, redundancy, monitoring and backups. Those
+          improvements are the plan, but they are not promises with dates attached.
         </p>
       </div>
     </section>
 
-    <!-- Stay informed -->
     <section class="section-plain">
-      <div class="section-head">
-        <h2>Stay Informed</h2>
-        <p>There is no mailing list yet, so this section does not pretend to have one.</p>
-      </div>
-      <div class="btn-row center">
-        <a href="contact.html" class="btn">Get in Touch</a>
-        <a href="docs.html" class="btn outline">Read the Docs</a>
+      <h2>What we collect</h2>
+      <div class="table-wrap">
+        <table class="styled-table">
+          <thead><tr><th>Data</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Email and display name</strong></td>
+              <td>To identify your account. Your email is the login identifier.</td>
+            </tr>
+            <tr>
+              <td><strong>Password</strong></td>
+              <td>Stored only as a salted hash (scrypt). We cannot read it and cannot
+                  recover it — a forgotten password needs an admin reset.</td>
+            </tr>
+            <tr>
+              <td><strong>API keys</strong></td>
+              <td>Stored as a SHA-256 fingerprint plus a short display prefix. The full
+                  key is shown once at creation and never again.</td>
+            </tr>
+            <tr>
+              <td><strong>Usage records</strong></td>
+              <td>Per request: model, input and output token counts, cost and a
+                  timestamp. This is what your usage page and any billing are built on.</td>
+            </tr>
+            <tr>
+              <td><strong>Conversation content</strong></td>
+              <td>Messages you send through Sigma or through threads are stored so the
+                  conversation can continue. Stateless <code class="code-inline">/api/v1/chat</code>
+                  calls are not stored as conversations.</td>
+            </tr>
+            <tr>
+              <td><strong>Login attempts</strong></td>
+              <td>Email and IP address, kept briefly, to slow down password guessing.</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </section>
 
+    <section class="section-plain">
+      <h2>What we do with it</h2>
+      <ul>
+        <li>Operate the service: authenticate you, run your requests, show your usage.</li>
+        <li>Meter usage so credits and redeem codes work.</li>
+        <li>Block abuse, such as automated password guessing.</li>
+      </ul>
+      <p>
+        <strong>We do not sell your data, and we do not use your conversations to
+        train models.</strong> If we ever want to use published conversations as
+        training data, we will ask first and make it opt-in.
+      </p>
+    </section>
+
+    <section class="section-plain">
+      <h2>Where it runs</h2>
+      <p>
+        The API runs on a machine in a home, reached through a tunnel. The
+        documentation and the dashboard are static files on GitHub Pages. In
+        practice that means two third parties see something:
+      </p>
+      <ul>
+        <li><strong>GitHub Pages</strong> serves the pages you are reading, and sees
+            your IP address like any website host.</li>
+        <li><strong>The tunnel provider</strong> (ngrok) relays API traffic, so it
+            sees the requests in transit. Traffic is TLS-encrypted end to end, but
+            the tunnel terminates it.</li>
+      </ul>
+      <p class="muted small">
+        If you are not comfortable with a home-hosted service and a tunnel, you
+        should not use this one. That is a reasonable position and we would not
+        argue with it.
+      </p>
+    </section>
+
+    <section class="section-plain">
+      <h2>Keeping and deleting</h2>
+      <ul>
+        <li><strong>Conversations</strong> stay until you delete them, from Sigma or
+            through the API.</li>
+        <li><strong>Usage records</strong> are kept while the account exists, because
+            they are what credits and usage reports are computed from.</li>
+        <li><strong>API keys</strong> can be revoked at any time and stop working
+            immediately.</li>
+        <li><strong>Account deletion</strong> is not self-service yet — ask us and we
+            will remove the account and its data.</li>
+      </ul>
+      <p class="muted small">
+        One caveat we would rather state: backups and logs are not yet as thorough
+        as they should be, so a deletion request is handled by hand rather than by a
+        guaranteed pipeline.
+      </p>
+    </section>
+
+    <section class="section-plain">
+      <h2>Not a legal document</h2>
+      <p>
+        We are a student team, not a company, and this page is plain-language
+        rather than a contract. There is no warranty of availability, fitness or
+        data retention. Use the service for what it is — a preview of models we are
+        proud of — and keep anything you cannot afford to lose somewhere else.
+      </p>
+    </section>
+
+    <section class="section-plain">
+      <div class="section-head">
+        <h2>Questions</h2>
+        <p>If something here is unclear, or you want your data removed, ask us.</p>
+      </div>
+      <div class="btn-row center">
+        <a href="contact.html" class="btn">Contact Us</a>
+        <a href="status.html" class="btn outline">Current Status</a>
+      </div>
+    </section>
   </main>
 
-  <!-- Footer -->
   <footer class="site-footer">
     <div class="container-wide">
       <div class="footer-grid">
