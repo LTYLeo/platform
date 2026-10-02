@@ -484,7 +484,32 @@ input:focus, select:focus, textarea:focus {
 }
 select option { background: #0f141f; color: var(--text); }
 textarea { resize: vertical; }
-input[type="range"] { padding: 0; border: none; background: transparent; box-shadow: none; accent-color: #3b82f6; }
+/* A range input with no track styling renders its unfilled part almost
+   invisibly on a dark background, so the control looks half-width. Draw both
+   halves explicitly. */
+input[type="range"] {
+  -webkit-appearance: none; appearance: none;
+  padding: 0; border: none; background: transparent; box-shadow: none;
+  width: 100%; height: 22px; cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 5px; border-radius: 999px;
+  background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.08);
+}
+input[type="range"]::-moz-range-track {
+  height: 5px; border-radius: 999px; background: rgba(255,255,255,.16);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 16px; height: 16px; border-radius: 50%; background: #3b82f6;
+  border: 2px solid #0b1220; margin-top: -7px;
+  box-shadow: 0 0 0 1px rgba(59,130,246,.6);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 14px; height: 14px; border-radius: 50%; background: #3b82f6;
+  border: 2px solid #0b1220;
+}
+input[type="range"]:focus-visible { outline: 2px solid rgba(59,130,246,.7); outline-offset: 4px; }
 input[type="checkbox"] { width: auto; accent-color: #3b82f6; }
 input[type="file"] { padding: 10px 14px; color: var(--muted); }
 .check-row { display: flex; align-items: center; gap: 10px; color: #cbd5e6; font-size: 14px; }
@@ -501,7 +526,16 @@ input[type="file"] { padding: 10px 14px; color: var(--muted); }
 .search-bar .btn { border-radius: 0 40px 40px 0; }
 
 /* --- Chat / playground ---------------------------------------------------- */
-.chat-scroll { display: flex; flex-direction: column; gap: 4px; }
+/* Its own scroll region: a long conversation should scroll inside the panel,
+   not stretch the page and push the composer out of view. */
+.chat-scroll {
+  display: flex; flex-direction: column; gap: 4px;
+  max-height: 58vh; min-height: 320px; overflow-y: auto;
+  padding-right: 6px; scroll-behavior: smooth;
+}
+.chat-scroll::-webkit-scrollbar { width: 8px; }
+.chat-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.14); border-radius: 999px; }
+.chat-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.24); }
 .chat-bubble-user {
   background: linear-gradient(145deg, #2563eb, #1d4ed8);
   color: #ffffff;

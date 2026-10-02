@@ -503,18 +503,29 @@ def _sigma_headers() -> dict[str, str]:
 
 
 def _sigma_payload(model: str, messages: list[dict[str, Any]], temperature: float,
-                   max_output_tokens: int, stream: bool) -> dict[str, Any]:
-    return {
+                   max_output_tokens: int, stream: bool,
+                   extra: dict[str, Any] | None = None) -> dict[str, Any]:
+    """The generation request.
+
+    ``extra`` carries backend-specific switches the caller passed through, such
+    as ``enable_thinking`` for TFMF. Dropping them here is silent: the request
+    still succeeds, it just ignores what the caller asked for.
+    """
+    payload = {
         "text": prompt_text(messages),
         "model": _sigma_model(model),
         "max_len": max_output_tokens,
         "temperature": temperature,
         "stream": stream,
     }
+    if extra:
+        payload.update({k: v for k, v in extra.items() if v is not None})
+    return payload
 
 
 def _generate_sigma(
-    model: str, messages: list[dict[str, Any]], *, temperature: float, max_output_tokens: int
+    model: str, messages: list[dict[str, Any]], *, temperature: float, max_output_tokens: int,
+    extra: dict[str, Any] | None = None,
 ) -> GenerationResult:
     _require_httpx()
     import httpx
@@ -524,7 +535,7 @@ def _generate_sigma(
         with httpx.Client(timeout=_timeout()) as client:
             response = client.post(
                 url,
-                json=_sigma_payload(model, messages, temperature, max_output_tokens, False),
+                json=_sigma_payload(model, messages, temperature, max_output_tokens, False, extra),
                 headers=_sigma_headers(),
             )
             response.raise_for_status()
@@ -576,7 +587,8 @@ def _iter_sigma_sse(response: Any) -> Iterator[str]:
 
 
 def _stream_sigma(
-    model: str, messages: list[dict[str, Any]], *, temperature: float, max_output_tokens: int
+    model: str, messages: list[dict[str, Any]], *, temperature: float, max_output_tokens: int,
+    extra: dict[str, Any] | None = None,
 ) -> tuple[Iterator[str], dict[str, Any]]:
     _require_httpx()
     import httpx
@@ -589,7 +601,7 @@ def _stream_sigma(
         response = client.send(
             client.build_request(
                 "POST", url,
-                json=_sigma_payload(model, messages, temperature, max_output_tokens, True),
+                json=_sigma_payload(model, messages, temperature, max_output_tokens, True, extra),
                 headers=_sigma_headers(),
             ),
             stream=True,
@@ -617,6 +629,7 @@ def generate(
     *,
     temperature: float = 0.7,
     max_output_tokens: int = 512,
+    extra: dict[str, Any] | None = None,
 ) -> GenerationResult:
     """Run one completion. Raises :class:`BackendUnavailable` on any failure."""
     name = backend_name()
@@ -626,7 +639,8 @@ def generate(
         )
     if name in (SIGMA, INFERENCE):
         return _generate_sigma(
-            model, messages, temperature=temperature, max_output_tokens=max_output_tokens
+            model, messages, temperature=temperature, max_output_tokens=max_output_tokens,
+            extra=extra,
         )
     return _generate_openai(
         model, messages, temperature=temperature, max_output_tokens=max_output_tokens
@@ -639,6 +653,7 @@ def stream(
     *,
     temperature: float = 0.7,
     max_output_tokens: int = 512,
+    extra: dict[str, Any] | None = None,
 ) -> StreamHandle:
     """Start one streaming completion.
 
@@ -654,7 +669,8 @@ def stream(
         return StreamHandle(inner, {}, messages)
     if backend_name() in (SIGMA, INFERENCE):
         sigma_inner, sigma_state = _stream_sigma(
-            model, messages, temperature=temperature, max_output_tokens=max_output_tokens
+            model, messages, temperature=temperature, max_output_tokens=max_output_tokens,
+            extra=extra,
         )
         return StreamHandle(sigma_inner, sigma_state, messages)
 

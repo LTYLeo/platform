@@ -560,21 +560,37 @@ def _sse(event: str, payload: dict) -> str:
     return f"event: {event}\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
 
 
+def _backend_extra(body: dict) -> dict:
+    """Backend-specific switches the caller passed, forwarded verbatim.
+
+    ``enable_thinking`` only means anything to TFMF, and the inference service
+    ignores keys it does not know, so this needs no per-model table.
+    """
+    extra: dict = {}
+    if "enable_thinking" in body and body["enable_thinking"] is not None:
+        extra["enable_thinking"] = bool(body["enable_thinking"])
+    return extra
+
+
 def _generate_or_502(model: str, messages: list[dict], temperature: float,
-                     max_output_tokens: int) -> model_backend.GenerationResult:
+                     max_output_tokens: int,
+                     extra: dict | None = None) -> model_backend.GenerationResult:
     try:
         return model_backend.generate(
-            model, messages, temperature=temperature, max_output_tokens=max_output_tokens
+            model, messages, temperature=temperature, max_output_tokens=max_output_tokens,
+            extra=extra,
         )
     except model_backend.BackendUnavailable as exc:
         raise fail(status.HTTP_502_BAD_GATEWAY, "backend_unavailable", str(exc)) from exc
 
 
 def _stream_or_502(model: str, messages: list[dict], temperature: float,
-                   max_output_tokens: int) -> model_backend.StreamHandle:
+                   max_output_tokens: int,
+                   extra: dict | None = None) -> model_backend.StreamHandle:
     try:
         return model_backend.stream(
-            model, messages, temperature=temperature, max_output_tokens=max_output_tokens
+            model, messages, temperature=temperature, max_output_tokens=max_output_tokens,
+            extra=extra,
         )
     except model_backend.BackendUnavailable as exc:
         raise fail(status.HTTP_502_BAD_GATEWAY, "backend_unavailable", str(exc)) from exc
@@ -748,7 +764,7 @@ def create_message(
     backend = _backend_label()
 
     if wants_stream:
-        handle = _stream_or_502(model, prompt, temperature, max_output_tokens)
+        handle = _stream_or_502(model, prompt, temperature, max_output_tokens, _backend_extra(body))
         return _streaming_response(
             handle,
             stream_id=new_id(MESSAGE_PREFIX),
@@ -760,7 +776,7 @@ def create_message(
             backend=backend,
         )
 
-    result = _generate_or_502(model, prompt, temperature, max_output_tokens)
+    result = _generate_or_502(model, prompt, temperature, max_output_tokens, _backend_extra(body))
     cost = db.record_usage(conn, user_id, int(key["id"]), model,
                            result.input_tokens, result.output_tokens)
     usage = _usage_out(result.input_tokens, result.output_tokens, cost, result.estimated)
@@ -873,7 +889,7 @@ def chat(
     backend = _backend_label()
 
     if wants_stream:
-        handle = _stream_or_502(model, messages, temperature, max_output_tokens)
+        handle = _stream_or_502(model, messages, temperature, max_output_tokens, _backend_extra(body))
         return _streaming_response(
             handle,
             stream_id=new_id(CHAT_PREFIX),
@@ -885,7 +901,7 @@ def chat(
             backend=backend,
         )
 
-    result = _generate_or_502(model, messages, temperature, max_output_tokens)
+    result = _generate_or_502(model, messages, temperature, max_output_tokens, _backend_extra(body))
     cost = db.record_usage(conn, user_id, int(key["id"]), model,
                            result.input_tokens, result.output_tokens)
     usage = _usage_out(result.input_tokens, result.output_tokens, cost, result.estimated)
