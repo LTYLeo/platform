@@ -63,40 +63,36 @@
     root.id = 'billingOverlay';
     root.hidden = true;
     root.classList.add('hidden');
+    // Payment is handled by hand: the buyer contacts us, we confirm the money
+    // arrived, and we send back a code. There is no automatic checkout, and
+    // nothing in this dialog can take a payment.
     root.innerHTML =
       '<div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="billingTitle">' +
         '<button class="modal-close" id="billingClose" aria-label="Close">&times;</button>' +
-        '<h2 id="billingTitle" style="margin-top:0;">' + t('Add Credit') + '</h2>' +
+        '<h2 id="billingTitle" style="margin-top:0;">' + t('Top up your account') + '</h2>' +
 
-        '<div class="billing-tabs">' +
-          '<button class="billing-tab active" data-tab="credit">' + t('Add Credit') + '</button>' +
-          '<button class="billing-tab" data-tab="redeem">' + t('Redeem a Code') + '</button>' +
-        '</div>' +
-
-        // ---- add credit ----
-        '<div class="billing-pane" data-pane="credit">' +
-          '<p class="muted small">' + t('Credit is added to your account and spent only as you use the API.') + '</p>' +
-          '<label>' + t('Amount (CNY)') + '</label>' +
-          '<div class="amount-row">' +
-            AMOUNTS.map(function (a) {
-              return '<button class="amount-chip" data-amount="' + a + '">¥' + a + '</button>';
-            }).join('') +
+        '<p class="muted small">' + t('Contact us, tell us the amount or the plan you want, and pay directly. We confirm it by hand and send you a redeem code.') + '</p>' +
+        '<div class="contact-card">' +
+          '<div class="contact-row">' +
+            '<span class="contact-label">' + t('WeChat') + '</span>' +
+            '<span class="contact-value" data-copy="Lambda_Prime">Lambda_Prime</span>' +
           '</div>' +
-          '<input type="number" id="billingAmount" min="' + MIN_AMOUNT + '" max="' + MAX_AMOUNT +
-            '" step="1" placeholder="' + t('Or enter an amount') + '" />' +
-          '<button class="btn block" id="billingCreate" style="margin-top:16px;">' +
-            t('Continue to payment') + '</button>' +
-          '<div id="billingIntent" class="billing-intent" hidden></div>' +
+          '<div class="contact-row">' +
+            '<span class="contact-label">' + t('QQ') + '</span>' +
+            '<span class="contact-value" data-copy="1637321445">1637321445</span>' +
+          '</div>' +
+          '<div class="contact-row">' +
+            '<span class="contact-label">' + t('Email') + '</span>' +
+            '<span class="contact-value" data-copy="1637321445@qq.com">1637321445@qq.com</span>' +
+          '</div>' +
         '</div>' +
+        '<p class="muted small">' + t('Tell us your account email too, so the code is issued to the right account.') + '</p>' +
 
-        // ---- redeem ----
-        '<div class="billing-pane" data-pane="redeem" hidden>' +
-          '<p class="muted small">' + t('Redeem codes top up your balance instantly. They look like TAI-XXXX-XXXX-XXXX.') + '</p>' +
-          '<label for="billingCode">' + t('Redeem code') + '</label>' +
-          '<input type="text" id="billingCode" placeholder="TAI-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false" />' +
-          '<button class="btn block" id="billingRedeem" style="margin-top:16px;">' + t('Redeem') + '</button>' +
-          '<div id="billingResult" class="billing-intent" hidden></div>' +
-        '</div>' +
+        '<hr class="billing-sep" />' +
+        '<label for="billingCode">' + t('Already have a code?') + '</label>' +
+        '<input type="text" id="billingCode" placeholder="TAI-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false" />' +
+        '<button class="btn block" id="billingRedeem" style="margin-top:16px;">' + t('Redeem') + '</button>' +
+        '<div id="billingResult" class="billing-intent" hidden></div>' +
       '</div>';
 
     document.body.appendChild(root);
@@ -107,19 +103,21 @@
       if (e.key === 'Escape' && !root.classList.contains('hidden')) close();
     });
 
-    root.querySelectorAll('.billing-tab').forEach(function (tab) {
-      tab.addEventListener('click', function () { showTab(tab.dataset.tab); });
-    });
-
-    root.querySelectorAll('.amount-chip').forEach(function (chip) {
-      chip.addEventListener('click', function () {
-        root.querySelector('#billingAmount').value = chip.dataset.amount;
-        root.querySelectorAll('.amount-chip').forEach(function (c) { c.classList.remove('active'); });
-        chip.classList.add('active');
+    // Click a contact detail to copy it. Long IDs typed by hand are the usual
+    // reason a payment ends up unmatchable.
+    root.querySelectorAll('[data-copy]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        const value = el.dataset.copy;
+        const done = function () {
+          const was = el.innerHTML;
+          el.innerHTML = t('Copied');
+          setTimeout(function () { el.innerHTML = was; }, 1200);
+        };
+        if (navigator.clipboard) navigator.clipboard.writeText(value).then(done, done);
+        else done();
       });
     });
 
-    root.querySelector('#billingCreate').addEventListener('click', createOrder);
     root.querySelector('#billingRedeem').addEventListener('click', redeemCode);
     root.querySelector('#billingCode').addEventListener('keydown', function (e) {
       if (e.key === 'Enter') { e.preventDefault(); redeemCode(); }
@@ -128,14 +126,6 @@
     return root;
   }
 
-  function showTab(name) {
-    root.querySelectorAll('.billing-tab').forEach(function (tab) {
-      tab.classList.toggle('active', tab.dataset.tab === name);
-    });
-    root.querySelectorAll('.billing-pane').forEach(function (pane) {
-      pane.hidden = pane.dataset.pane !== name;
-    });
-  }
 
   function say(node, html, kind) {
     node.hidden = false;
@@ -143,124 +133,6 @@
     node.innerHTML = html;
   }
 
-  // --------------------------------------------------------------------- //
-  // Adding credit
-  // --------------------------------------------------------------------- //
-
-  function createOrder() {
-    if (!requireSignIn()) return;
-
-    var amount = parseFloat(root.querySelector('#billingAmount').value);
-    var out = root.querySelector('#billingIntent');
-    var button = root.querySelector('#billingCreate');
-
-    if (!amount || amount < MIN_AMOUNT) {
-      say(out, t('Enter an amount of at least ¥1.'), 'error');
-      return;
-    }
-    if (amount > MAX_AMOUNT) {
-      say(out, t('For amounts above ¥5,000 please contact us directly.'), 'error');
-      return;
-    }
-
-    button.disabled = true;
-    button.innerHTML = t('Creating order…');
-
-    // `provider` is left to the server: whichever one is configured is the one
-    // that can actually be paid, and the client has no way to know that.
-    api('POST', '/billing/orders', { purpose: 'api_credit', amount_cny: amount })
-      .then(function (order) {
-        currentOrder = order;
-        return api('POST', '/billing/orders/' + encodeURIComponent(order.id) + '/intent');
-      })
-      .then(renderIntent)
-      .catch(function (err) {
-        say(out, esc(err && err.message ? err.message : t('Could not create the order.')), 'error');
-      })
-      .finally(function () {
-        button.disabled = false;
-        button.innerHTML = t('Continue to payment');
-      });
-  }
-
-  function renderIntent(res) {
-    var out = root.querySelector('#billingIntent');
-    var intent = res && res.intent;
-    var orderId = res && res.order_id;
-
-    if (res && res.status === 'paid') {
-      say(out, '<p><strong>' + t('This order is already paid.') + '</strong></p>', 'ok');
-      return;
-    }
-    if (!intent) {
-      say(out, esc(t('No payment method is configured. Please contact us.')), 'error');
-      return;
-    }
-
-    // Big, copyable, and above the button. Afdian has no per-order checkout, so
-    // this string is the only thing that ties the payment back to the account -
-    // it has to be the most obvious element on the panel, not a footnote.
-    var ref =
-      '<div class="ref-block">' +
-        '<div class="ref-label">' + t('Paste this into the payment message') + '</div>' +
-        '<div class="ref-value">' +
-          '<code id="billingRef">' + esc(orderId) + '</code>' +
-          '<button type="button" class="ref-copy" id="billingRefCopy">' + t('Copy') + '</button>' +
-        '</div>' +
-        '<div class="ref-hint">' + t('Without it your payment cannot be matched automatically.') + '</div>' +
-      '</div>';
-
-    if (intent.kind === 'external_link') {
-      var url = esc(intent.url || intent.link || '#');
-      say(out,
-        '<p>' + t('Complete the payment on the next page, then come back here.') + '</p>' +
-        ref +
-        '<a class="btn block" id="billingPayLink" href="' + url +
-          '" target="_blank" rel="noopener">' + t('Open payment page') + '</a>' +
-        '<p class="muted small" style="margin-top:12px;">' +
-          t('Forgot to paste it? Your payment is still recorded and we will match it by hand.') +
-        '</p>', 'ok');
-      startPolling(orderId);
-
-      // Open it for them. Popup blockers may refuse - the button above is the
-      // fallback, which is why it stays even when this succeeds.
-      try { window.open(intent.url || intent.link, '_blank', 'noopener'); } catch (e) {}
-
-    } else if (intent.kind === 'qrcode') {
-      say(out,
-        '<p>' + t('Scan to pay:') + '</p>' +
-        '<div class="qr-holder" id="billingQR"></div>' + ref, 'ok');
-      drawQR(intent.payload);
-      startPolling(orderId);
-
-    } else {
-      // 'manual' and anything else: show exactly what the server said, since it
-      // is written for the person paying.
-      var note = intent.note || t('Contact us to arrange payment, quoting the order reference.');
-      say(out, '<p>' + esc(note) + '</p>' + ref, 'ok');
-    }
-
-    var copy = out.querySelector('#billingRefCopy');
-    if (copy) {
-      copy.addEventListener('click', function () {
-        var code = out.querySelector('#billingRef');
-        var text = code ? code.textContent : orderId;
-        var done = function () {
-          copy.textContent = t('Copied');
-          setTimeout(function () { copy.textContent = t('Copy'); }, 1500);
-        };
-        if (navigator.clipboard) {
-          navigator.clipboard.writeText(text).then(done).catch(function () {});
-        } else {
-          // Older browsers: select it so a manual copy still works.
-          var r = document.createRange();
-          r.selectNodeContents(code);
-          var sel = window.getSelection();
-          sel.removeAllRanges(); sel.addRange(r);
-        }
-      });
-    }
-  }
 
   function drawQR(payload) {
     var holder = root.querySelector('#billingQR');
@@ -281,29 +153,7 @@
     document.head.appendChild(s);
   }
 
-  function startPolling(orderId) {
-    stopPolling();
-    var attempts = 0;
-    pollTimer = setInterval(function () {
-      attempts += 1;
-      if (attempts > 100) { stopPolling(); return; }   // ~5 minutes
-      api('GET', '/billing/orders').then(function (list) {
-        var rows = (list && list.data) || list || [];
-        var found = rows.filter(function (o) { return o.id === orderId; })[0];
-        if (found && found.status === 'paid') {
-          stopPolling();
-          var out = root.querySelector('#billingIntent');
-          say(out, '<p><strong>' + t('Payment received. Your balance has been updated.') +
-                   '</strong></p>', 'ok');
-          if (window.TAIAuth && window.TAIAuth.refresh) window.TAIAuth.refresh();
-        }
-      }).catch(function () { /* keep polling; a blip is not a failure */ });
-    }, 3000);
-  }
 
-  function stopPolling() {
-    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-  }
 
   // --------------------------------------------------------------------- //
   // Redeeming
@@ -350,23 +200,19 @@
   // Public
   // --------------------------------------------------------------------- //
 
-  function open(tab) {
+  function open() {
     build();
     // Both: the attribute is what assistive technology reads, the class is what
     // actually removes it from the layer.
     root.hidden = false;
     root.classList.remove('hidden');
-    showTab(tab || 'credit');
     if (window.TAII18n && window.TAII18n.translate) window.TAII18n.translate(root);
-    // Amount presets start on nothing selected so the placeholder is meaningful.
-    root.querySelector('#billingAmount').value = '';
-    root.querySelectorAll('.amount-chip').forEach(function (c) { c.classList.remove('active'); });
-    root.querySelector('#billingIntent').hidden = true;
     root.querySelector('#billingResult').hidden = true;
+    const code = root.querySelector('#billingCode');
+    if (code) code.value = '';
   }
 
   function close() {
-    stopPolling();
     if (!root) return;
     // `.modal-overlay` sets `display: flex`, which outranks the UA rule for
     // `[hidden]` - so setting the attribute alone left the dialog on screen with

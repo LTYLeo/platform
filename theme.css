@@ -1251,3 +1251,35 @@ html.i18n-pending body { visibility: hidden; }
   section { padding: 36px 0; }
   .site-header { padding: 18px 20px; }
 }
+
+/* Billing is handled by hand, so the contact details are the point of the
+   dialog and are styled to be read and clicked, not glanced at. */
+.contact-card {
+  margin: 14px 0;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.contact-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--card-border);
+}
+.contact-row:last-child { border-bottom: none; }
+.contact-label {
+  flex: 0 0 72px;
+  font-size: 13px; color: var(--text-secondary);
+}
+.contact-value {
+  flex: 1;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 14px;
+  cursor: pointer;
+  user-select: all;
+}
+.contact-value:hover { color: #7bd1ff; }
+.billing-sep {
+  margin: 20px 0 16px;
+  border: none;
+  border-top: 1px solid var(--card-border);
+}

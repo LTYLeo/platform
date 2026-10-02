@@ -662,12 +662,18 @@ def validate_grants(grants: dict) -> dict:
         if amount <= 0:
             raise ValueError("api_credit needs a positive amount_cny")
         return {"kind": "api_credit", "amount_cny": round(amount, 2)}
-    if kind == "sigma_pro":
+    # Derived from the plan catalogue rather than listed here. It used to name
+    # "sigma_pro" alone, so the admin CLI offered sigma_plus and this refused it
+    # - the 10 CNY tier, the one most people would actually buy, could not be
+    # sold. Anything the catalogue sells can now be issued as a code.
+    sellable = tuple(plans.SIGMA_PURPOSES) if hasattr(plans, "SIGMA_PURPOSES") else ("sigma_pro",)
+    if kind in sellable:
         months = int(grants.get("months") or 1)
         if months <= 0:
-            raise ValueError("sigma_pro needs months >= 1")
-        return {"kind": "sigma_pro", "months": months}
-    raise ValueError("grants.kind must be 'api_credit' or 'sigma_pro'")
+            raise ValueError("%s needs months >= 1" % kind)
+        return {"kind": kind, "months": months}
+    raise ValueError("grants.kind must be 'api_credit' or one of %s"
+                     % ", ".join(repr(k) for k in sellable))
 
 
 def generate_codes(
@@ -730,8 +736,12 @@ def redeem_code(conn: sqlite3.Connection, raw_code: str, user_id: int) -> tuple[
         result["balance_cny"] = db.grant_credit(
             conn, user_id, float(grants["amount_cny"]), "redeem:%s" % code
         )
-    elif grants["kind"] == "sigma_pro":
-        result.update(grant_pro(conn, user_id, int(grants["months"])))
+    elif grants["kind"] in getattr(plans, "SIGMA_PURPOSES", {"sigma_pro": "pro"}):
+        # Looked up rather than branched on "sigma_pro". A Plus code fell through
+        # this and was marked redeemed without granting anything - the buyer got
+        # a success message and no plan.
+        tier = plans.SIGMA_PURPOSES[grants["kind"]]
+        result.update(grant_plan(conn, user_id, tier, int(grants["months"])))
 
     # Conditional update: if two requests race, exactly one wins.
     cur = conn.execute(
@@ -813,6 +823,14 @@ def grant_plan(conn: sqlite3.Connection, user_id: int, plan: str, months: int) -
     ).fetchone()
     now = db.utcnow()
 
+    # admin is a role, not a tier that can be bought. Applying a plan code on top
+    # of it replaced it, so an administrator redeeming a code lost their own
+    # access - which is how this was found: a test redemption demoted the account
+    # that was running it.
+    if current and current["plan"] == "admin" and plan != "admin":
+        return {"plan": "admin", "expires_at": current["expires_at"], "skipped": True,
+                "reason": "admin is not affected by plan grants"}
+
     base = now
     # Stacking only makes sense on the same tier. Upgrading from plus to pro
     # should start a pro month rather than extend a plus one, so an existing
@@ -826,18 +844,22 @@ def grant_plan(conn: sqlite3.Connection, user_id: int, plan: str, months: int) -
             pass
 
     expires = base + timedelta(days=30 * int(months))
+    # The plan is a parameter, and this statement used to hardcode 'pro' in both
+    # the VALUES list and the conflict clause - every redemption produced Pro,
+    # whatever had been bought. A Plus code gave away the 100 CNY tier.
     conn.execute(
         """
         INSERT INTO subscriptions (user_id, plan, expires_at, updated_at)
-        VALUES (?, 'pro', ?, ?)
-        ON CONFLICT(user_id) DO UPDATE SET plan = 'pro', expires_at = excluded.expires_at,
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(user_id) DO UPDATE SET plan = excluded.plan,
+                                           expires_at = excluded.expires_at,
                                            updated_at = excluded.updated_at
         """,
-        (user_id, db.iso(expires), db.iso(now)),
+        (user_id, plan, db.iso(expires), db.iso(now)),
     )
     conn.commit()
     return {
-        "plan": "pro",
+        "plan": plan,
         "months": int(months),
         "expires_at": db.iso(expires),
         "days_left": (expires - now).days,
