@@ -33,7 +33,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from server import billing, db, pricing, security
+from server import billing, db, notify, pricing, security
 from server.api_v1 import router as api_v1_router
 from server.submissions_api import (
     admin_router as submissions_admin_router,
@@ -225,6 +225,12 @@ def row_to_user(row: sqlite3.Row) -> UserOut:
 # --------------------------------------------------------------------------- #
 
 @app.get("/api/health")
+@app.on_event("startup")
+def _announce_notifications():
+    # Printed once so "no email arrived" is never a silent mystery.
+    print("[startup] " + notify.describe())
+
+
 def health() -> dict:
     return {"status": "ok"}
 

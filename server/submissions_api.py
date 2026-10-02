@@ -18,7 +18,7 @@ import sqlite3
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile, status
 
-from server import db
+from server import db, notify
 from server.deps import client_ip, fail, new_id, require_admin
 
 router = APIRouter(prefix="/api/submissions", tags=["submissions"])
@@ -111,6 +111,7 @@ def submit_contact(payload: dict, request: Request,
 
     submission_id = _store(conn, kind="contact", name=name, email=email,
                            topic=subject, message=message, extra=None, ip=ip)
+    notify.submission("contact", name, email, subject, message, submission_id=submission_id)
     return {"status": "success", "id": submission_id,
             "message": "Thank you — your message has reached us."}
 
@@ -118,8 +119,12 @@ def submit_contact(payload: dict, request: Request,
 @router.post("/careers", status_code=status.HTTP_201_CREATED)
 async def submit_careers(
     request: Request,
-    first_name: str = Form(...),
-    last_name: str = Form(...),
+    # One name field. "First" and "last" do not describe Chinese names: written
+    # in Latin order a Chinese name reads backwards, and asking for two halves
+    # invites the wrong one into each box.
+    name: str | None = Form(default=None),
+    first_name: str | None = Form(default=None),
+    last_name: str | None = Form(default=None),
     email: str = Form(...),
     position: str = Form(...),
     message: str = Form(...),
@@ -130,8 +135,15 @@ async def submit_careers(
     ip = client_ip(request)
     _check_rate(conn, ip, "careers")
 
-    first = _clean(first_name, MAX_NAME, "firstName")
-    last = _clean(last_name, MAX_NAME, "lastName")
+    full = _clean(name, MAX_NAME, "name", required=False)
+    if not full:
+        # A client still sending the two halves keeps working.
+        first = _clean(first_name, MAX_NAME, "firstName", required=False)
+        last = _clean(last_name, MAX_NAME, "lastName", required=False)
+        full = ("%s %s" % (first, last)).strip()
+        if not full:
+            raise fail(status.HTTP_422_UNPROCESSABLE_ENTITY, "invalid_request",
+                       "`name` is required", param="name")
     mail = _clean(email, MAX_NAME, "email")
     if not EMAIL_RE.match(mail):
         raise fail(status.HTTP_422_UNPROCESSABLE_ENTITY, "invalid_email",
@@ -160,11 +172,14 @@ async def submit_careers(
     target.write_bytes(blob)
 
     submission_id = _store(
-        conn, kind="careers", name=f"{first} {last}".strip(), email=mail, topic=role,
+        conn, kind="careers", name=full, email=mail, topic=role,
         message=note, extra={"portfolio": link} if link else None, ip=ip,
         file_path=str(pathlib.Path("resumes") / stored_name),
         file_name=resume.filename or stored_name,
     )
+    notify.submission("careers", full, mail, role, note,
+                      extra={"portfolio": link} if link else None,
+                      file_name=resume.filename, submission_id=submission_id)
     return {"status": "success", "id": submission_id,
             "message": "Thank you — your application has reached us."}
 
