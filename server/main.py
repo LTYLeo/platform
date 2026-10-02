@@ -228,7 +228,7 @@ def row_to_user(row: sqlite3.Row) -> UserOut:
 @app.on_event("startup")
 def _announce_notifications():
     # Printed once so "no email arrived" is never a silent mystery.
-    print("[startup] " + notify.describe())
+    print("[startup] " + notify.describe(), flush=True)
 
 
 def health() -> dict:

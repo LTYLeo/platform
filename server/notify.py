@@ -114,10 +114,10 @@ def _send(kind: str, name: str, email: str, topic: str, message: str,
                 server.starttls(context=context)
                 server.login(USER, PASSWORD)
                 server.send_message(msg)
-        print("[notify] sent %s notification to %s" % (kind, TO))
+        print("[notify] sent %s notification to %s" % (kind, TO), flush=True)
     except Exception as exc:  # noqa: BLE001 - a mail failure is never the caller's problem
         print("[notify] FAILED to send %s notification: %s: %s"
-              % (kind, type(exc).__name__, exc))
+              % (kind, type(exc).__name__, exc), flush=True)
 
 
 def submission(kind: str, name: str, email: str, topic: str, message: str,

@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Help Articles - TAI Developer Platform</title>
+  <link rel="icon" href="favicon.png" />
+
+  <script>
+    (function () {
+      try {
+        var lang = 'en';
+        var fromUrl = /[?&]lang=(en|zh)(?![a-z])/i.exec(location.search);
+        if (fromUrl) { lang = fromUrl[1].toLowerCase(); }
+        else if (localStorage.getItem('tai_lang')) { lang = localStorage.getItem('tai_lang'); }
+        else if ((navigator.language || '').toLowerCase().indexOf('zh') === 0) { lang = 'zh'; }
+        if (lang === 'zh') document.documentElement.classList.add('i18n-pending');
+        document.documentElement.setAttribute('data-lang', lang);
+      } catch (e) { /* default to English */ }
+    })();
+  </script>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="theme.css?v=850a8a107a" />
+  <style>
+    .article { padding: 34px 0; border-bottom: 1px solid var(--border-light); }
+    .article:last-of-type { border-bottom: none; }
+    .article h2 { font-size: 26px; margin-bottom: 6px; }
+    .article .lede { color: var(--text-secondary); margin-bottom: 20px; }
+    .article h3 { font-size: 17px; margin: 24px 0 8px; }
+    .article p, .article li { color: #cbd5e6; font-size: 15px; line-height: 1.7; }
+    .article ol, .article ul { padding-left: 22px; margin: 0 0 14px; }
+    .article li { margin-bottom: 6px; }
+    .article code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 13px; background: rgba(255,255,255,.08);
+      padding: 2px 6px; border-radius: 5px;
+    }
+    .article pre {
+      background: rgba(0,0,0,.42); border: 1px solid var(--border-light);
+      border-radius: 10px; padding: 14px 16px; overflow-x: auto; margin: 0 0 16px;
+    }
+    .article pre code { background: none; padding: 0; font-size: 13px; line-height: 1.6; }
+    .callout {
+      border-left: 3px solid #60a5fa; background: rgba(96,165,250,.08);
+      border-radius: 0 10px 10px 0; padding: 12px 16px; margin: 0 0 16px;
+    }
+    .callout.warn { border-left-color: #ffc400; background: rgba(255,196,0,.07); }
+    .callout p:last-child { margin-bottom: 0; }
+    .toc { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 8px; }
+    .toc a {
+      font-size: 13px; padding: 7px 14px; border-radius: 999px;
+      border: 1px solid var(--border-light); color: var(--text-secondary);
+    }
+    .toc a:hover { color: var(--text); border-color: #3b82f6; }
+    table.err { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 16px; }
+    table.err th, table.err td { border: 1px solid var(--border-light); padding: 9px 12px; text-align: left; }
+    table.err th { background: rgba(255,255,255,.04); }
+    table.err td code { font-size: 12.5px; }
+  </style>
+</head>
+<body class="page-shell">
+
+  <header class="container site-header">
+    <a class="logo" href="index.html">
+      <span class="mark"><img src="logo.png" alt="TAI Research Logo" /></span>
+      <span>
+        <span class="logo-name">TAI Developer Platform</span>
+        <small>Build with Intelligence</small>
+      </span>
+    </a>
+    <nav class="site-nav">
+      <a href="index.html">Home</a>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="playground.html">Playground</a>
+      <a href="docs.html">Docs</a>
+      <a href="pricing.html">Pricing</a>
+      <a href="#" id="loginBtn" class="btn sm">Login</a>
+    </nav>
+  </header>
+
+  <main class="container-narrow">
+    <section class="page-hero">
+      <h1>Help Articles</h1>
+      <p class="lead">
+        Six short guides to the things that actually go wrong. Every figure here
+        is taken from the running service, not from a plan for one.
+      </p>
+      <div class="toc">
+        <a href="#api-keys">Your first API key</a>
+        <a href="#billing">Pay-as-you-go billing</a>
+        <a href="#errors">Error codes</a>
+        <a href="#integration">Integration practices</a>
+        <a href="#tokens">Token and cost control</a>
+        <a href="#rate-limits">Rate limits</a>
+      </div>
+    </section>
+
+    <!-- 1 -->
+    <section class="article" id="api-keys">
+      <h2>How to Generate Your First API Key</h2>
+      <p class="lede">Everything you need to make your first request, and the one thing about keys that surprises people.</p>
+
+      <ol>
+        <li>Sign in at the <a href="dashboard.html">Dashboard</a>. New accounts get
+            <strong>5,000 tokens free</strong>, which is enough to try every model
+            we serve without paying anything.</li>
+        <li>Under <strong>API Keys</strong>, choose <strong>Create Key</strong> and
+            give it a name you will recognise later — <code>laptop</code>,
+            <code>ci</code>, <code>demo-app</code>.</li>
+        <li><strong>Copy the key immediately.</strong> It is shown once and never
+            again.</li>
+        <li>Send your first request.</li>
+      </ol>
+
+      <pre><code>curl https://your-endpoint/api/v1/chat \
+  -H "Authorization: Bearer sk-tai-..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "tfmf",
+    "messages": [{"role": "user", "content": "Hello"}]
+  }'</code></pre>
+
+      <div class="callout warn">
+        <p><strong>Why you cannot see the key again.</strong> We store a SHA-256
+        fingerprint and a short display prefix, not the key itself. That means a
+        stolen database cannot be turned into working keys — but it also means a
+        lost key is gone. If you lose one, revoke it and make another; it takes
+        seconds.</p>
+      </div>
+
+      <h3>Keeping keys safe</h3>
+      <ul>
+        <li>Put the key in an environment variable, never in source code. Anything
+            committed to git is public sooner or later.</li>
+        <li>Use a separate key per application. When one leaks you revoke one thing,
+            not everything.</li>
+        <li>Revoke keys you no longer use. <code>last_used_at</code> in the
+            dashboard shows which are actually still calling.</li>
+      </ul>
+    </section>
+
+    <!-- 2 -->
+    <section class="article" id="billing">
+      <h2>Understanding Pay-As-You-Go Billing</h2>
+      <p class="lede">How credits work, and why the free allowance does not expire.</p>
+
+      <p>Every account starts with <strong>5,000 free tokens</strong>. The free
+         allowance is consumed before any credit, so you are never charged while it
+         remains.</p>
+
+      <h3>What you pay for</h3>
+      <p>Tokens, priced per million, with <strong>input and output priced
+         separately</strong>. Output costs more because generating a token is
+         strictly more work than reading one.</p>
+
+      <p>The live table is on the <a href="pricing.html">Pricing</a> page, which is
+         the source of truth. As a sense of scale: TFMF input is ¥0.5 per million
+         tokens and output ¥3 per million, so a typical few-hundred-token exchange
+         costs a fraction of a fen.</p>
+
+      <h3>Topping up</h3>
+      <p>Credit is added with <strong>redeem codes</strong>. Redeeming a code
+         applies the balance instantly; codes can also carry a plan upgrade.</p>
+
+      <div class="callout">
+        <p><strong>Why codes, and not a card form?</strong> Because this is a
+        research preview run from a home server by a student team, and we are not
+        going to hold card details for it. A code moves the money and the platform
+        only ever sees "this account has ¥20 of credit" — there is no payment
+        instrument stored here to leak.</p>
+      </div>
+
+      <h3>Checking usage</h3>
+      <p>The <a href="dashboard.html">Dashboard</a> breaks usage down per model,
+         per month. The same numbers are available programmatically at
+         <code>GET /api/usage</code>, which is useful for catching a runaway
+         integration before it matters.</p>
+    </section>
+
+    <!-- 3 -->
+    <section class="article" id="errors">
+      <h2>Common API Error Codes and Solutions</h2>
+      <p class="lede">What each failure means, and what to change.</p>
+
+      <table class="err">
+        <thead><tr><th>Status</th><th>Code</th><th>Usually means</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>401</td><td><code>invalid_api_key</code></td>
+            <td>The key is wrong, revoked, or the <code>Bearer </code> prefix is
+                missing. Check for whitespace when copying from a file.</td>
+          </tr>
+          <tr>
+            <td>401</td><td><code>not_authenticated</code></td>
+            <td>No credentials at all. The header is absent rather than malformed.</td>
+          </tr>
+          <tr>
+            <td>402</td><td><code>insufficient_balance</code></td>
+            <td>Free allowance and credit are both exhausted. Redeem a code to
+                continue.</td>
+          </tr>
+          <tr>
+            <td>404</td><td><code>model_not_found</code></td>
+            <td>The model name is not in the catalogue, or is not live yet. Call
+                <code>GET /api/v1/models</code> for the current list rather than
+                hardcoding one.</td>
+          </tr>
+          <tr>
+            <td>422</td><td><code>invalid_request</code></td>
+            <td>A required field is missing, empty or over its length limit. The
+                response names the offending field in <code>param</code>.</td>
+          </tr>
+          <tr>
+            <td>429</td><td><code>rate_limited</code></td>
+            <td>Too many requests too quickly. Back off and retry; see the rate
+                limit article below.</td>
+          </tr>
+          <tr>
+            <td>502</td><td><code>backend_unavailable</code></td>
+            <td>The model server could not be reached. This is ours to fix, not
+                yours — retry with backoff.</td>
+          </tr>
+          <tr>
+            <td>503</td><td><code>not_configured</code></td>
+            <td>The requested capability is not enabled on this deployment.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Reading the response body</h3>
+      <p>Errors are always JSON with a stable <code>code</code> and a human
+         <code>message</code>. Branch on the code, never on the message text — the
+         wording is for people and may change.</p>
+
+      <pre><code>{
+  "code": "invalid_request",
+  "message": "`max_output_tokens` must be between 1 and 4096",
+  "param": "max_output_tokens"
+}</code></pre>
+
+      <div class="callout">
+        <p><strong>The 502 is worth planning for.</strong> This service is a
+        research preview and genuinely does go down. Treat
+        <code>backend_unavailable</code> as expected, not exceptional, and have a
+        fallback or a queued retry. See <a href="privacy.html">Privacy &amp;
+        Terms</a> for how much downtime to expect.</p>
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section class="article" id="integration">
+      <h2>Best Practices for API Integration</h2>
+      <p class="lede">Four things that separate an integration that holds up from one that does not.</p>
+
+      <h3>1. Stream by default</h3>
+      <p>Set <code>"stream": true</code>. A complete answer takes as long as it
+         takes; streamed, the first words arrive in well under a second and the
+         user reads while the model writes. The API speaks
+         <code>text/event-stream</code> with these events:</p>
+
+      <ul>
+        <li><code>message.start</code> — the request was accepted, with an id.</li>
+        <li><code>message.delta</code> — the next piece of text. Append it.</li>
+        <li><code>message.done</code> — finished, with final usage figures.</li>
+      </ul>
+
+      <pre><code>for (const line of buffer.split("\n")) {
+  if (!line.startsWith("data:")) continue;
+  const evt = JSON.parse(line.slice(5));
+  if (evt.delta) append(evt.delta);   // append, never replace
+}</code></pre>
+
+      <p><strong>Append, do not replace.</strong> Every event carries only the new
+         text. Replacing the whole message with each delta produces output that
+         flickers and loses everything before the last token.</p>
+
+      <h3>2. Retry the right failures</h3>
+      <p>Retry <code>429</code> and <code>502</code> with exponential backoff. Do
+         <em>not</em> retry <code>401</code>, <code>402</code> or
+         <code>422</code> — the request is wrong and will stay wrong. Retrying
+         those just burns your own quota.</p>
+
+      <h3>3. Set a timeout</h3>
+      <p>A generation can legitimately take a while, especially with reasoning
+         enabled. But without a timeout, a dropped connection hangs a worker
+         forever. Give streaming requests a generous read timeout and a short
+         connect timeout.</p>
+
+      <h3>4. Do not log full prompts by default</h3>
+      <p>Prompts contain whatever your users typed. If you log them, you have
+         created a copy of user data in a second place with none of the controls
+         the first place had.</p>
+    </section>
+
+    <!-- 5 -->
+    <section class="article" id="tokens">
+      <h2>Token Usage and Cost Optimization</h2>
+      <p class="lede">Where the tokens actually go, and which levers matter.</p>
+
+      <h3>What counts</h3>
+      <p>Both directions are billed and both are reported in
+         <code>usage</code> on every response:</p>
+      <ul>
+        <li><code>prompt_tokens</code> — your system prompt plus the entire
+            conversation history resent on every call.</li>
+        <li><code>completion_tokens</code> — the answer, and any reasoning the
+            model produced before it.</li>
+      </ul>
+
+      <div class="callout warn">
+        <p><strong>The single biggest surprise: history is resent every
+        time.</strong> A chat that feels like twenty messages is billed as twenty
+        requests, each carrying all the messages before it. Cost grows
+        quadratically with conversation length unless you do something about
+        it.</p>
+      </div>
+
+      <h3>Levers that work</h3>
+      <ol>
+        <li><strong>Trim history.</strong> Send the last few turns plus a summary
+            of anything older. This is the largest saving available in most
+            integrations.</li>
+        <li><strong>Cap <code>max_output_tokens</code>.</strong> It is a ceiling,
+            not a target, but it bounds the worst case.</li>
+        <li><strong>Turn reasoning off when you do not need it.</strong> Thinking
+            is genuinely useful for multi-step problems and pure cost for
+            greetings. It is off by default for exactly this reason.</li>
+        <li><strong>Use a smaller model for small jobs.</strong> Classification and
+            routing rarely need the largest model you have.</li>
+        <li><strong>Shorten the system prompt.</strong> It is billed on every
+            single request. A 500-token system prompt costs more over a thousand
+            calls than the answers do.</li>
+      </ol>
+
+      <h3>Watching it</h3>
+      <p><code>GET /api/usage</code> returns month-to-date totals and a per-model
+         breakdown. Alert on it rather than discovering the number at the end of
+         the month.</p>
+    </section>
+
+    <!-- 6 -->
+    <section class="article" id="rate-limits">
+      <h2>Rate Limits and How to Handle Them</h2>
+      <p class="lede">Why the limit exists, and the backoff that respects it.</p>
+
+      <p>Requests are limited per account. The limit is there less to ration
+         capacity than to stop one runaway loop from starving everyone else on a
+         machine that is, frankly, one computer in someone's home.</p>
+
+      <p>When you exceed it the API returns <strong>429</strong> with
+         <code>rate_limited</code>. It does not queue the request; you retry it.</p>
+
+      <h3>Exponential backoff with jitter</h3>
+      <pre><code>delay = min(cap, base * 2 ** attempt)
+sleep(delay / 2 + random() * delay / 2)   // full jitter</code></pre>
+
+      <p>The jitter matters. Without it, every client that was rejected at the same
+         moment retries at the same moment, and the retry becomes the next spike.
+         Spreading them out is what makes the backoff work.</p>
+
+      <h3>Practical rules</h3>
+      <ul>
+        <li>Start with <code>base = 0.5s</code> and a cap around 30 seconds.</li>
+        <li>Limit total attempts — five or so. Beyond that the user is waiting for
+            something that is not coming.</li>
+        <li>Back off on <code>502</code> with the same code path; an unavailable
+            backend and a throttled one want the same response from you.</li>
+        <li>Batch and cache where you can. The cheapest request is the one you do
+            not make.</li>
+      </ul>
+    </section>
+
+    <section class="section-plain">
+      <div class="section-head">
+        <h2>Still stuck?</h2>
+        <p>If an article did not cover it, tell us — that is how the next one gets written.</p>
+      </div>
+      <div class="btn-row center">
+        <a href="contact.html" class="btn">Contact Support</a>
+        <a href="docs.html" class="btn outline">API Reference</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container-wide">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-brand">
+            <img src="logo.png" alt="TAI Research Logo" />
+            <span>TAI Developer Platform</span>
+          </div>
+          <p class="muted">Building the Future of Creation with AI.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Platform</h4>
+          <ul>
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="playground.html">Playground</a></li>
+            <li><a href="docs.html">Documentation</a></li>
+            <li><a href="pricing.html">Pricing</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Resources</h4>
+          <ul>
+            <li><a href="community.html">Community</a></li>
+            <li><a href="support.html">Support</a></li>
+            <li><a href="status.html">Status</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="about.html">About</a></li>
+            <li><a href="careers.html">Careers</a></li>
+            <li><a href="contact.html">Contact</a></li>
+            <li><a href="privacy.html">Privacy Policy</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div>© TAI Research. All rights reserved.</div>
+        <div class="footer-social">
+          <a href="https://github.com/LTYLeo" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://huggingface.co/TAI-Research" target="_blank" rel="noopener">Hugging Face</a>
+          <a href="https://space.bilibili.com/88158150" target="_blank" rel="noopener">Bilibili</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="config.js?v=dd074658b5"></script>
+  <script src="locales/zh.js?v=186a9a7191"></script>
+  <script src="i18n.js?v=7ec564fff9"></script>
+  <script src="auth.js?v=414d7938ca"></script>
+</body>
+</html>
