@@ -50,7 +50,62 @@
       color: var(--muted);
     }
     .link-btn i { margin-right: 4px; }
-  </style>
+  
+      /* ---- Playground -------------------------------------------------- */
+      .pg-msg { margin-bottom: 18px; }
+      .pg-role {
+        font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+        color: var(--text-secondary); margin-bottom: 6px;
+      }
+      .pg-body {
+        border-radius: 14px; padding: 14px 16px; line-height: 1.65;
+        font-size: 14px; overflow-wrap: anywhere;
+      }
+      .pg-user .pg-body { background: rgba(59,130,246,.14); border: 1px solid rgba(59,130,246,.28); }
+      .pg-ai .pg-body { background: rgba(255,255,255,.035); border: 1px solid var(--border-light); }
+
+      /* Markdown inside a reply. Without this the model's output renders as one
+         undifferentiated wall of text, which is what it looks like raw. */
+      .pg-body > :first-child { margin-top: 0; }
+      .pg-body > :last-child { margin-bottom: 0; }
+      .pg-body p { margin: 0 0 10px; }
+      .pg-body h1, .pg-body h2, .pg-body h3 { font-size: 15px; margin: 14px 0 8px; }
+      .pg-body ul, .pg-body ol { margin: 0 0 10px; padding-left: 22px; }
+      .pg-body li { margin-bottom: 4px; }
+      .pg-body code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 12.5px; background: rgba(255,255,255,.08);
+        padding: 2px 5px; border-radius: 5px;
+      }
+      .pg-body pre {
+        background: rgba(0,0,0,.42); border: 1px solid var(--border-light);
+        border-radius: 10px; padding: 12px 14px; overflow-x: auto; margin: 0 0 10px;
+      }
+      .pg-body pre code { background: none; padding: 0; font-size: 12.5px; line-height: 1.55; }
+      .pg-body table { border-collapse: collapse; margin: 0 0 10px; font-size: 13px; }
+      .pg-body th, .pg-body td { border: 1px solid var(--border-light); padding: 6px 10px; }
+      .pg-body a { color: #7bd1ff; }
+
+      /* The reasoning block arrives as a Markdown quote; make it read as an
+         aside rather than as part of the answer. */
+      .pg-body blockquote {
+        margin: 0 0 12px; padding: 10px 14px;
+        border-left: 3px solid rgba(123,209,255,.5);
+        background: rgba(123,209,255,.06); border-radius: 0 8px 8px 0;
+        color: var(--text-secondary); font-size: 13px;
+      }
+      .pg-body blockquote p { margin: 0 0 6px; }
+      .pg-cursor::after {
+        content: '▍'; color: #7bd1ff; animation: pg-blink 1s step-end infinite;
+      }
+      @keyframes pg-blink { 50% { opacity: 0; } }
+      .pg-tools { margin-top: 8px; display: flex; gap: 14px; }
+      .pg-tools button {
+        background: none; border: none; color: var(--text-secondary);
+        font-size: 12px; cursor: pointer; padding: 0;
+      }
+      .pg-tools button:hover { color: var(--text-primary); }
+</style>
 </head>
 <body>
   <!-- Navbar -->
@@ -225,6 +280,8 @@
     </div>
   </footer>
   <!-- i18n: English lives in the markup, locales/zh.js supplies the Chinese strings -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js"></script>
   <script src="config.js"></script>
   <script src="locales/zh.js"></script>
   <script src="i18n.js"></script>
@@ -279,11 +336,45 @@
       });
     }
 
+    // Render model output as Markdown. Sanitised because the text is generated:
+    // a model that emits a <script> tag should not get to run it here.
+    function renderMarkdown(target, text) {
+      if (!text) { target.innerHTML = '<span class="muted">…</span>'; return; }
+      if (window.marked && window.DOMPurify) {
+        target.innerHTML = window.DOMPurify.sanitize(
+          window.marked.parse(text, { breaks: true, gfm: true }));
+      } else {
+        target.innerHTML = '<p>' + esc(text).replace(/\n/g, '<br>') + '</p>';
+      }
+    }
+
     function bubble(role, text) {
-      var el = document.createElement('div');
-      el.className = role === 'user' ? 'chat-bubble-user' : 'chat-bubble-ai';
-      el.innerHTML = '<p>' + esc(text).replace(/\n/g, '<br>') + '</p>';
-      return el;
+      var wrap = document.createElement('div');
+      wrap.className = 'pg-msg ' + (role === 'user' ? 'pg-user' : 'pg-ai');
+      var label = document.createElement('div');
+      label.className = 'pg-role';
+      label.innerText = role === 'user' ? 'You' : (modelSelect.value || 'Model');
+      var body = document.createElement('div');
+      body.className = 'pg-body';
+      wrap.appendChild(label); wrap.appendChild(body);
+      if (role === 'user') {
+        body.innerText = text;
+      } else {
+        renderMarkdown(body, text);
+      }
+      return { wrap: wrap, body: body };
+    }
+
+    function copyButton(text) {
+      var b = document.createElement('button');
+      b.innerHTML = '<i class="fas fa-copy"></i> Copy';
+      b.addEventListener('click', function () {
+        navigator.clipboard.writeText(text).then(function () {
+          b.innerHTML = '<i class="fas fa-check"></i> Copied';
+          setTimeout(function () { b.innerHTML = '<i class="fas fa-copy"></i> Copy'; }, 1500);
+        });
+      });
+      return b;
     }
 
     function showThinkingNote(el) {
@@ -295,10 +386,10 @@
 
     function addMessage(role, text) {
       if (chatEmpty) chatEmpty.style.display = 'none';
-      var el = bubble(role, text);
-      chatScroll.appendChild(el);
+      var b = bubble(role, text);
+      chatScroll.appendChild(b.wrap);
       chatScroll.scrollTop = chatScroll.scrollHeight;
-      return el;
+      return b;
     }
 
     function setBusy(on) {
@@ -339,7 +430,7 @@
 
       var key = (keyInput.value || '').trim();
       var text = (chatInput.value || '').trim();
-      if (!key) { addMessage('ai', 'Enter your API key first (Dashboard -> API Keys).'); return; }
+      if (!key) { addMessage('ai', 'Enter your API key first — create one in the Dashboard.'); return; }
       if (!text) return;
 
       localStorage.setItem(KEY_STORE, key);
@@ -350,11 +441,14 @@
       usageLine.innerText = 'streaming...';
 
       var reply = addMessage('ai', '');
+      reply.body.classList.add('pg-cursor');
       var body = {
         model: modelSelect.value,
         messages: messages.slice(),
         temperature: parseFloat(tempInput.value),
         max_output_tokens: parseInt(maxTokens.value, 10) || 512,
+        // Streamed always: it is how the API is meant to be consumed, and
+        // waiting for a whole answer makes a 4B model feel far slower than it is.
         stream: true
       };
       var sys = (systemPrompt.value || '').trim();
@@ -371,7 +465,8 @@
 
         if (!res.ok) {
           var err = await res.json().catch(function () { return {}; });
-          reply.innerHTML = '<p class="form-error">' +
+          reply.body.classList.remove('pg-cursor');
+          reply.body.innerHTML = '<p class="form-error">' +
             esc(err.message || err.code || ('HTTP ' + res.status)) + '</p>';
           messages.pop();
           usageLine.innerText = 'failed';
@@ -398,7 +493,7 @@
 
             if (event === 'message.delta' && data.delta) {
               full += data.delta;
-              reply.innerHTML = '<p>' + esc(full).replace(/\n/g, '<br>') + '</p>';
+              renderMarkdown(reply.body, full);
               chatScroll.scrollTop = chatScroll.scrollHeight;
             } else if (event === 'message.done') {
               var u = data.usage || {};
@@ -410,14 +505,20 @@
             }
           }
         }
+        reply.body.classList.remove('pg-cursor');
         if (full) {
           messages.push({ role: 'assistant', content: full });
+          var tools = document.createElement('div');
+          tools.className = 'pg-tools';
+          tools.appendChild(copyButton(full));
+          reply.wrap.appendChild(tools);
         } else {
-          reply.innerHTML = '<p class="muted">(empty response)</p>';
+          reply.body.innerHTML = '<p class="muted">(the model returned nothing — try a larger Max Tokens)</p>';
           messages.pop();
         }
       } catch (e) {
-        reply.innerHTML = '<p class="form-error">' + esc(String(e)) + '</p>';
+        reply.body.classList.remove('pg-cursor');
+        reply.body.innerHTML = '<p class="form-error">' + esc(String(e)) + '</p>';
         messages.pop();
         usageLine.innerText = 'failed';
       } finally {

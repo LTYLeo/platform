@@ -361,6 +361,16 @@ def can_generate(conn: sqlite3.Connection, user_id: int) -> tuple[bool, str, dic
     402 body instead of a bare "insufficient balance".
     """
     state = account_state(conn, user_id)
+
+    # Staff accounts are never gated. Checking the plan rather than a balance is
+    # what makes "unlimited" actually unlimited instead of a very large number
+    # that someone eventually exhausts and then has to top up again.
+    row = conn.execute(
+        "SELECT plan FROM subscriptions WHERE user_id = ?", (user_id,)
+    ).fetchone()
+    if row is not None and row["plan"] == "admin":
+        return True, "admin", state
+
     if state["free_remaining"] > 0:
         return True, "free_allowance", state
     if state["balance_cny"] > 0:
