@@ -63,7 +63,7 @@
     root.id = 'billingOverlay';
     root.hidden = true;
     root.innerHTML =
-      '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="billingTitle">' +
+      '<div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="billingTitle">' +
         '<button class="modal-close" id="billingClose" aria-label="Close">&times;</button>' +
         '<h2 id="billingTitle" style="margin-top:0;">' + t('Add Credit') + '</h2>' +
 

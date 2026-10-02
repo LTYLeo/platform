@@ -178,6 +178,13 @@ code, pre, .mono { font-family: "SFMono-Regular", "Courier New", ui-monospace, m
 .site-header .logo small { color: var(--muted); }
 
 nav.site-nav { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+.nav-toggle {
+  display: none; align-items: center; justify-content: center;
+  width: 44px; height: 44px; cursor: pointer;
+  background: none; border: 1px solid var(--border); border-radius: 10px;
+  color: var(--text); font-size: 18px;
+}
+.site-header { position: relative; }
 nav.site-nav a {
   color: #cbd5e6;
   font-weight: 500;
@@ -1205,7 +1212,30 @@ html.i18n-pending body { visibility: hidden; }
   .hero { grid-template-columns: 1fr; gap: 32px; }
   h1, .h1 { font-size: 38px; }
   h2, .h2 { font-size: 27px; }
-  nav.site-nav { display: none; }
+  /* The nav used to be hidden outright, which took the login button with it and
+     left no way to sign in on a phone. It collapses into a menu instead. */
+  .nav-toggle { display: inline-flex; }
+  nav.site-nav {
+    display: none;
+    position: absolute;
+    top: 100%; left: 0; right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 10px 20px 18px;
+    background: rgba(10, 12, 18, 0.98);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    z-index: 60;
+  }
+  nav.site-nav.open { display: flex; }
+  nav.site-nav a {
+    padding: 14px 4px;
+    font-size: 16px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+  nav.site-nav a.btn { margin-top: 14px; text-align: center; border-bottom: none; }
   .featured-post { grid-template-columns: 1fr; }
   .featured-post .featured-media { order: -1; min-height: 200px; }
   .news-date { min-width: 80px; }
