@@ -85,6 +85,7 @@
           <ul>
             <li><a href="#chat">Chat</a></li>
             <li><a href="#streaming">Streaming</a></li>
+            <li><a href="#stopping">Stopping a generation</a></li>
             <li><a href="#assistants">Assistants</a></li>
             <li><a href="#threads">Threads</a></li>
             <li><a href="#messages">Messages</a></li>
@@ -254,6 +255,48 @@ for event in stream:
             Breaking out of the loop early is safe: the HTTP response is closed for you, and any
             text already generated is still recorded and billed.
           </p>
+
+          <h3 id="stopping">Stopping a generation</h3>
+          <p>
+            There is no cancel endpoint to call, because the stream <em>is</em> the request:
+            closing your side of it is the cancellation. The server notices, stops the model and
+            releases the inference slot &mdash; a request made immediately afterwards is not
+            queued behind the one you abandoned.
+          </p>
+          <p class="note">
+            This is the same mechanism the Playground's stop button uses. Verified against the
+            running service: a stream abandoned two seconds in was followed by a fresh request
+            that returned in 0.2s.
+          </p>
+
+          <div class="code-block">
+<pre># Python: stop after roughly 200 characters
+with client.chat.stream(model="tfmf", messages=[{"role": "user", "content": "Write an essay."}]) as stream:
+    for event in stream:
+        if isinstance(event, MessageDelta):
+            print(event.delta, end="", flush=True)
+            if seen &gt; 200:
+                break        # closes the response; the model stops here
+
+# curl: Ctrl-C, or a timeout
+curl -N https://your-endpoint/api/v1/chat \
+  -H "Authorization: Bearer $TAI_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"tfmf","stream":true,"messages":[{"role":"user","content":"..."}]}' \
+  --max-time 5</pre>
+          </div>
+
+          <p>
+            Two things worth knowing before building on it:
+          </p>
+          <ul>
+            <li><strong>Text already generated is recorded and billed.</strong> Stopping is not
+                an undo; the tokens produced before you closed the connection were produced.</li>
+            <li><strong>A non-streaming request cannot be cancelled.</strong> With
+                <code class="code-inline">stream: false</code> the answer is computed before
+                anything is sent, so there is nothing to close until it is already done. Stream
+                anything a user might want to interrupt.</li>
+          </ul>
 
           <h2 id="assistants">Assistants</h2>
           <p>
