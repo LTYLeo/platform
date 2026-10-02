@@ -43,7 +43,24 @@
     .card > .row h2 { font-size: 22px; margin: 0; }
     /* page-specific: breathing room between the two table row actions */
     table.styled-table td .btn + .btn { margin-left: 8px; }
-  </style>
+  
+      /* Usage bars: proportional to the largest model, so the shape is readable
+         even when one model dominates. */
+      .usage-chart { display: flex; flex-direction: column; gap: 14px; }
+      .usage-row { display: flex; flex-direction: column; gap: 6px; }
+      .usage-label {
+        display: flex; justify-content: space-between; align-items: baseline;
+        gap: 12px; font-size: 13px;
+      }
+      .usage-bar {
+        height: 8px; border-radius: 999px; overflow: hidden;
+        background: rgba(255,255,255,.08);
+      }
+      .usage-bar > span {
+        display: block; height: 100%; border-radius: 999px;
+        background: linear-gradient(90deg, #2563eb, #60a5fa);
+      }
+    </style>
 </head>
 <body>
   <!-- Navbar -->
@@ -137,7 +154,9 @@
       <!-- Usage statistics -->
       <div class="card" style="margin-top:24px;">
         <h2 style="font-size:22px;margin-bottom:18px;">Usage Statistics</h2>
-        <div class="chart-placeholder">Usage chart would be displayed here</div>
+        <div id="usageChart" class="usage-chart">
+            <p class="muted small">Sign in to see your usage.</p>
+          </div>
       </div>
     </section>
   </main>

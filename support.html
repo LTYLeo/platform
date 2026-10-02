@@ -105,7 +105,7 @@
       </div>
       <div class="grid grid-4 grid-flush">
         <!-- Getting Started -->
-        <a href="#" class="card card-clickable text-center">
+        <a href="docs.html" class="card card-clickable text-center">
           <div class="icon-chip center"><i class="fas fa-rocket"></i></div>
           <span class="card-title">Getting Started</span>
           <span class="card-desc">New to TAI? Learn the basics and set up your first project.</span>
@@ -119,14 +119,14 @@
         </a>
 
         <!-- Billing & Accounts -->
-        <a href="#" class="card card-clickable text-center">
+        <a href="docs.html" class="card card-clickable text-center">
           <div class="icon-chip purple center"><i class="fas fa-credit-card"></i></div>
           <span class="card-title">Billing &amp; Accounts</span>
           <span class="card-desc">Manage your account, billing, and pay-as-you-go credit.</span>
         </a>
 
         <!-- Troubleshooting -->
-        <a href="#" class="card card-clickable text-center">
+        <a href="docs.html" class="card card-clickable text-center">
           <div class="icon-chip amber center"><i class="fas fa-tools"></i></div>
           <span class="card-title">Troubleshooting</span>
           <span class="card-desc">Find solutions to common issues and errors.</span>
@@ -144,47 +144,47 @@
         <div class="card article-card">
           <h3>How to Generate Your First API Key</h3>
           <p class="card-desc">Step-by-step guide to creating and managing your TAI API keys for authentication.</p>
-          <a href="#" class="card-link">Read Article <i class="fas fa-chevron-right"></i></a>
+          <a href="docs.html" class="card-link">Read Article <i class="fas fa-chevron-right"></i></a>
         </div>
 
         <!-- Article 2 -->
         <div class="card article-card">
           <h3>Understanding Pay-As-You-Go Billing</h3>
           <p class="card-desc">Learn how our pay-as-you-go system works and how to add credit to your account.</p>
-          <a href="#" class="card-link">Read Article <i class="fas fa-chevron-right"></i></a>
+          <a href="docs.html" class="card-link">Read Article <i class="fas fa-chevron-right"></i></a>
         </div>
 
         <!-- Article 3 -->
         <div class="card article-card">
           <h3>Common API Error Codes and Solutions</h3>
           <p class="card-desc">Reference guide for troubleshooting common TAI API error responses.</p>
-          <a href="#" class="card-link">Read Article <i class="fas fa-chevron-right"></i></a>
+          <a href="docs.html" class="card-link">Read Article <i class="fas fa-chevron-right"></i></a>
         </div>
 
         <!-- Article 4 -->
         <div class="card article-card">
           <h3>Best Practices for API Integration</h3>
           <p class="card-desc">Tips and recommendations for building robust applications with TAI's API.</p>
-          <a href="#" class="card-link">Read Article <i class="fas fa-chevron-right"></i></a>
+          <a href="docs.html" class="card-link">Read Article <i class="fas fa-chevron-right"></i></a>
         </div>
 
         <!-- Article 5 -->
         <div class="card article-card">
           <h3>Token Usage and Cost Optimization</h3>
           <p class="card-desc">Learn how to optimize your token usage to control costs and improve efficiency.</p>
-          <a href="#" class="card-link">Read Article <i class="fas fa-chevron-right"></i></a>
+          <a href="docs.html" class="card-link">Read Article <i class="fas fa-chevron-right"></i></a>
         </div>
 
         <!-- Article 6 -->
         <div class="card article-card">
           <h3>Rate Limits and How to Handle Them</h3>
           <p class="card-desc">Understand TAI's rate limiting policies and implement proper backoff strategies.</p>
-          <a href="#" class="card-link">Read Article <i class="fas fa-chevron-right"></i></a>
+          <a href="docs.html" class="card-link">Read Article <i class="fas fa-chevron-right"></i></a>
         </div>
       </div>
 
       <div class="text-center">
-        <a href="#" class="view-all-link">View All Articles</a>
+        <a href="docs.html" class="view-all-link">View All Articles</a>
       </div>
     </section>
 
@@ -194,7 +194,7 @@
         <h2>Still need help?</h2>
         <p>Our support team is here to assist you with any questions or issues.</p>
         <div class="btn-row">
-          <a href="#" class="btn lg"><i class="fas fa-envelope"></i>Contact Support</a>
+          <a href="contact.html" class="btn lg"><i class="fas fa-envelope"></i>Contact Support</a>
           <a href="community.html" class="btn outline lg"><i class="fas fa-users"></i>Ask Community</a>
         </div>
       </div>
@@ -322,5 +322,45 @@
   <script src="locales/zh.js"></script>
   <script src="i18n.js"></script>
   <script src="auth.js"></script>
+  <script>
+  /* Filters the FAQ list on this page. There is no search backend, so this
+     searches what is actually here rather than pretending to search a corpus. */
+  (function () {
+    var input = document.getElementById('faqSearch');
+    var btn = document.getElementById('faqSearchBtn');
+    var note = document.getElementById('faqSearchNote');
+    if (!input) return;
+
+    function targets() {
+      return Array.prototype.slice.call(
+        document.querySelectorAll('.card-clickable, .article-card, .card'));
+    }
+
+    function run() {
+      var q = (input.value || '').trim().toLowerCase();
+      var all = targets();
+      if (!q) {
+        all.forEach(function (el) { el.style.display = ''; });
+        if (note) note.innerText = '';
+        return;
+      }
+      var hits = 0;
+      all.forEach(function (el) {
+        var match = el.innerText.toLowerCase().indexOf(q) !== -1;
+        el.style.display = match ? '' : 'none';
+        if (match) hits += 1;
+      });
+      if (note) {
+        note.innerText = hits
+          ? hits + (hits === 1 ? ' result' : ' results') + ' on this page'
+          : 'Nothing on this page matches. Try the docs, or get in touch.';
+      }
+    }
+
+    input.addEventListener('input', run);
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); run(); } });
+    if (btn) btn.addEventListener('click', run);
+  })();
+  </script>
 </body>
 </html>

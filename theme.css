@@ -528,6 +528,10 @@ input[type="file"] { padding: 10px 14px; color: var(--muted); }
 /* --- Chat / playground ---------------------------------------------------- */
 /* Its own scroll region: a long conversation should scroll inside the panel,
    not stretch the page and push the composer out of view. */
+/* Status rows stack with a divider; the page builds them from live checks. */
+.status-list { display: flex; flex-direction: column; gap: 0; }
+.status-list .status-row + .status-row { border-top: 1px solid var(--border-light); }
+
 .chat-scroll {
   display: flex; flex-direction: column; gap: 4px;
   max-height: 58vh; min-height: 320px; overflow-y: auto;
