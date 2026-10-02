@@ -41,6 +41,22 @@ SUBJECT_PREFIX = {
 }
 
 
+def _ssl_context() -> ssl.SSLContext:
+    """A context that actually verifies the certificate.
+
+    python.org builds on macOS ship no CA bundle, so ``create_default_context()``
+    fails with "unable to get local issuer certificate" on a perfectly good
+    connection. certifi carries its own bundle and is already a transitive
+    dependency of the SDK's httpx; falling back to the system store keeps this
+    working where certifi is absent.
+    """
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except ImportError:
+        return ssl.create_default_context()
+
+
 def configured() -> bool:
     return bool(HOST and USER and PASSWORD and TO)
 
@@ -88,7 +104,7 @@ def _send(kind: str, name: str, email: str, topic: str, message: str,
         msg["Reply-To"] = email
         msg.set_content(_body(kind, name, email, topic, message, extra, file_name, submission_id))
 
-        context = ssl.create_default_context()
+        context = _ssl_context()
         if PORT == 465:
             with smtplib.SMTP_SSL(HOST, PORT, timeout=20, context=context) as server:
                 server.login(USER, PASSWORD)
