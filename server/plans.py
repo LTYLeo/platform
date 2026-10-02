@@ -20,7 +20,11 @@ a paying tier.
 from __future__ import annotations
 
 #: Cheapest first. Used to describe a tier without repeating the list.
-MODEL_CHOICES = ("gtc25", "gtc25_400m", "gtc25v", "gtc25o", "esft", "large")
+MODEL_CHOICES = ("gtc25", "gtc25_400m", "gtc25v", "gtc25o", "esft", "large", "tfmf")
+
+#: On Sigma the same weights are sold under a product name; the developer
+#: platform's API keeps the research name. One model, two audiences.
+SIGMA_MODEL_NAMES = {"tfmf": "GTC-2.5 Turbo"}
 
 #: Models that are still research rather than product. Reachable on Pro within
 #: limits, and not below it. Kept separate from MODEL_CHOICES because "all models"
@@ -30,6 +34,7 @@ FRONTIER_MODELS = ("large",)
 PLANS: dict[str, dict] = {
     "free": {
         "name": "Free",
+        "tagline": "Try Sigma",
         "price_cny": 0.0,
         "daily_limit": 20,
         # The two cheapest models only. This is the tier that costs us money on
@@ -37,26 +42,38 @@ PLANS: dict[str, dict] = {
         "models": ["gtc25", "gtc25_400m"],
         "reasoning": False,
         "priority": False,
-        "summary": "Try it out. 20 messages a day on the smaller models.",
+        # Conversation history is what makes a chat feel like a chat, and it is
+        # also what makes each request cost more. Pro only.
+        "context": False,
+        # Written the way plan pages usually are: the heading sells the benefit,
+        # the sentence says exactly what you get. Limits belong in the sentence,
+        # not in the heading - nobody upgrades to "300 messages".
+        "summary": "See how AI can help with everyday questions, drafts and small tasks.",
     },
     "plus": {
         "name": "Plus",
-        "price_cny": 5.0,
+        "tagline": "Your everyday assistant",
+        "price_cny": 10.0,
         "daily_limit": 300,
         "models": [m for m in MODEL_CHOICES if m != "large"],
-        "reasoning": True,
+        # Reasoning is what separates the two paid tiers, so Plus does not get
+        # it. It stays a Pro capability, and stays off unless asked for.
+        "reasoning": False,
         "priority": False,
-        "summary": "For daily use. 300 messages a day, reasoning, and every model except the frontier previews.",
+        "context": False,
+        "summary": "For work you come back to daily. 300 messages a day, GTC-2.5 Turbo, and every model except the frontier previews.",
     },
     "pro": {
         "name": "Pro",
-        "price_cny": 25.0,
+        "tagline": "Maximum power",
+        "price_cny": 100.0,
         "daily_limit": None,          # unlimited
         "models": None,               # everything, including models added later
         "reasoning": True,
         "priority": True,
         "frontier": True,
-        "summary": "For heavy use. No daily cap, every model, and limited access to frontier research previews.",
+        "context": True,
+        "summary": "For people who rely on our most powerful models all day. No daily cap, conversation context, and limited access to frontier research previews.",
     },
     "admin": {
         "name": "Admin",
@@ -65,6 +82,8 @@ PLANS: dict[str, dict] = {
         "models": None,
         "reasoning": True,
         "priority": True,
+        "frontier": True,
+        "context": True,
         "summary": "Staff. Never metered and never charged.",
     },
 }
@@ -121,4 +140,6 @@ def enforce(plan: str | None) -> dict:
         "models": list(entry["models"]) if entry["models"] else None,
         "reasoning": entry["reasoning"],
         "priority": entry["priority"],
+        "context": entry.get("context", False),
+        "frontier": entry.get("frontier", False),
     }
