@@ -250,6 +250,31 @@ def cmd_resolve_unmatched(args) -> None:
     conn.close()
 
 
+def cmd_backup(args) -> None:
+    """Take a backup and prove it can be restored."""
+    from server import backup
+    print("  %s" % backup.describe())
+    report = backup.drill()
+    if report.get("ok"):
+        print("  ok   %s" % report["file"])
+        print("       %s" % report["verify"])
+    else:
+        print("  FAILED at %s: %s" % (report.get("stage", "verify"),
+                                      report.get("error") or report.get("verify")))
+        sys.exit(1)
+    if not report.get("offsite"):
+        print()
+        print("  WARNING: the backup is on the same disk as the database.")
+        print("  A dead disk takes both. Set TAI_BACKUP_DIR to an external")
+        print("  location to make this a real backup.")
+
+
+def cmd_monitor(args) -> None:
+    """Check the services now, and alert if something changed."""
+    from server import monitor
+    sys.exit(monitor.run(quiet=args.quiet))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="server.admin_cli", description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -300,6 +325,13 @@ def main() -> None:
     p = sub.add_parser("handled", help="mark a submission as dealt with")
     p.add_argument("submission_id", type=int)
     p.set_defaults(func=cmd_handled)
+
+    p = sub.add_parser("backup", help="take a database backup and verify it restores")
+    p.set_defaults(func=cmd_backup)
+
+    p = sub.add_parser("monitor", help="check the services and alert on change")
+    p.add_argument("--quiet", action="store_true")
+    p.set_defaults(func=cmd_monitor)
 
     p = sub.add_parser("unmatched", help="payments that arrived with no order reference")
     p.add_argument("--all", action="store_true", help="include already resolved ones")
