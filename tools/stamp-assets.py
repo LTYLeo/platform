@@ -30,6 +30,7 @@ STAMPED = (
     "i18n.js",
     "auth.js",
     "config.js",
+    "billing.js",
     "locales/zh.js",
 )
 
