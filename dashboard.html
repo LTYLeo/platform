@@ -36,7 +36,7 @@
       } catch (e) { /* private mode / no storage */ }
     })();
   </script>
-  <link rel="stylesheet" href="theme.css?v=850a8a107a" />
+  <link rel="stylesheet" href="theme.css?v=8fcdd7b644" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <style>
     /* page-specific: keep in-card section headings proportionate to the cards */
@@ -157,6 +157,13 @@
         <div id="usageChart" class="usage-chart">
             <p class="muted small">Sign in to see your usage.</p>
           </div>
+
+        <div class="btn-row" style="margin-top:18px;">
+          <button class="btn" id="dashAddCredit" type="button">
+            <i class="fas fa-plus-circle" style="margin-right:8px;"></i>Add Credit</button>
+          <button class="btn outline" id="dashRedeem" type="button">
+            <i class="fas fa-ticket" style="margin-right:8px;"></i>Redeem a Code</button>
+        </div>
       </div>
     </section>
   </main>
@@ -214,9 +221,10 @@
 
 
   <script src="config.js?v=dd074658b5"></script>
-  <script src="locales/zh.js?v=186a9a7191"></script>
+  <script src="locales/zh.js?v=68d22d7dcb"></script>
   <script src="i18n.js?v=7ec564fff9"></script>
   <script src="auth.js?v=414d7938ca"></script>
+  <script src="billing.js"></script>
 
   <script>
     /* Dashboard: renders the signed-in user's API keys from the real API. */
@@ -381,6 +389,14 @@
         if (user) load(); else signedOut();
       });
     })();
+  </script>
+  <script>
+  document.getElementById('dashAddCredit').addEventListener('click', function () {
+    window.TAIBilling.open('credit');
+  });
+  document.getElementById('dashRedeem').addEventListener('click', function () {
+    window.TAIBilling.open('redeem');
+  });
   </script>
 </body>
 </html>

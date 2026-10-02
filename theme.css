@@ -1026,6 +1026,33 @@ input[type="file"] { padding: 10px 14px; color: var(--muted); }
   white-space: nowrap;
 }
 
+/* Billing modal: add credit and redeem codes */
+.billing-tabs { display: flex; gap: 8px; margin: 4px 0 20px; }
+.billing-tab {
+  flex: 1; padding: 9px 14px; border-radius: 10px; cursor: pointer;
+  background: rgba(255,255,255,.04); border: 1px solid var(--border-light);
+  color: var(--text-secondary); font-size: 14px;
+}
+.billing-tab.active { background: rgba(59,130,246,.16); border-color: rgba(59,130,246,.5); color: var(--text); }
+.amount-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.amount-chip {
+  padding: 9px 18px; border-radius: 10px; cursor: pointer; font-size: 14px;
+  background: rgba(255,255,255,.04); border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+}
+.amount-chip:hover { border-color: #3b82f6; color: var(--text); }
+.amount-chip.active { background: rgba(59,130,246,.18); border-color: #3b82f6; color: #fff; }
+.billing-intent {
+  margin-top: 18px; padding: 14px 16px; border-radius: 12px;
+  background: rgba(255,255,255,.04); border: 1px solid var(--border-light); font-size: 14px;
+}
+.billing-intent.ok { border-color: rgba(96,165,250,.45); background: rgba(96,165,250,.07); }
+.billing-intent.error { border-color: rgba(248,113,113,.45); background: rgba(248,113,113,.07); }
+.billing-intent p { margin: 0 0 8px; }
+.billing-intent p:last-child { margin-bottom: 0; }
+.billing-intent code { font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
+.qr-holder { background: #fff; padding: 8px; border-radius: 8px; display: inline-block; margin: 6px 0; }
+
 .form-success { color: #56d364; font-size: 14px; margin-top: 12px; }
 .form-error {
   color: #fb7185;

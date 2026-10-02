@@ -37,7 +37,7 @@
     })();
   </script>
   <meta name="description" content="TAI Developer Platform pricing — per-token pricing for GTC-2.5 mini, TFMF and the Giggle / Bro / Sweetie companion models." />
-  <link rel="stylesheet" href="theme.css?v=850a8a107a" />
+  <link rel="stylesheet" href="theme.css?v=8fcdd7b644" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <style>
     /* page-specific: CNY hero pill, wallet read-out, model blocks, estimate panel */
@@ -131,10 +131,10 @@
             <i class="fas fa-wallet"></i>
             <div>
               <p class="wallet-label">Current Balance</p>
-              <p class="wallet-amount">¥0.00</p>
+              <p class="wallet-amount">¥<span id="walletBalance">—</span></p>
             </div>
           </div>
-          <button class="btn lg">
+          <button class="btn lg" id="addCreditBtn" type="button">
             <i class="fas fa-plus-circle" style="margin-right:8px;"></i>
             Add Credit
           </button>
@@ -538,8 +538,23 @@
   </script>
   <!-- i18n: English lives in the markup, locales/zh.js supplies the Chinese strings -->
   <script src="config.js?v=dd074658b5"></script>
-  <script src="locales/zh.js?v=186a9a7191"></script>
+  <script src="locales/zh.js?v=68d22d7dcb"></script>
   <script src="i18n.js?v=7ec564fff9"></script>
   <script src="auth.js?v=414d7938ca"></script>
+  <script src="billing.js"></script>
+  <script>
+  document.getElementById('addCreditBtn').addEventListener('click', function () {
+    window.TAIBilling.open('credit');
+  });
+  // Show the real balance rather than a hardcoded zero.
+  window.TAIAuth.onChange(function (user) {
+    var el = document.getElementById('walletBalance');
+    if (!el) return;
+    if (!user) { el.textContent = '0.00'; return; }
+    window.TAIAuth.request('GET', '/billing/entitlements')
+      .then(function (e) { el.textContent = Number(e.balance_cny || 0).toFixed(2); })
+      .catch(function () { el.textContent = '—'; });
+  });
+  </script>
 </body>
 </html>
