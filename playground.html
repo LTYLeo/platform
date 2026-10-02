@@ -99,6 +99,14 @@
         content: '▍'; color: #7bd1ff; animation: pg-blink 1s step-end infinite;
       }
       @keyframes pg-blink { 50% { opacity: 0; } }
+      /* Filled and square while generating, so it reads as a different action
+         rather than a dimmed version of the same one. */
+      .stopping {
+        background: rgba(255, 255, 255, .16) !important;
+        border-color: rgba(255, 255, 255, .28) !important;
+      }
+      .stopping:hover { background: rgba(255, 255, 255, .24) !important; }
+
       .pg-tools { margin-top: 8px; display: flex; gap: 14px; }
       .pg-tools button {
         background: none; border: none; color: var(--text-secondary);
@@ -399,9 +407,13 @@
 
     function setBusy(on) {
       busy = on;
-      sendBtn.disabled = on;
-      sendBtn.innerHTML = on ? '<i class="fas fa-circle-notch fa-spin"></i>'
+      sendBtn.classList.toggle('stopping', on);
+      sendBtn.innerHTML = on ? '<i class="fas fa-stop"></i>'
                              : '<i class="fas fa-paper-plane"></i>';
+      sendBtn.setAttribute('aria-label', on ? 'Stop generating' : 'Send message');
+      // While generating the button is a stop control and always live. Otherwise
+      // it is live only when there is something to send.
+      sendBtn.disabled = on ? false : !chatInput.value.trim();
     }
 
     function updateCode() {
@@ -462,7 +474,9 @@
 
       var full = '';
       try {
+        generateController = new AbortController();
         var res = await apiFetch(apiBase() + '/api/v1/chat', {
+          signal: generateController.signal,
           method: 'POST',
           headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
           body: JSON.stringify(body)
@@ -523,10 +537,26 @@
         }
       } catch (e) {
         reply.body.classList.remove('pg-cursor');
+        if (e && e.name === 'AbortError') {
+          // Stopping is deliberate; keep what arrived and say so.
+          if (full) {
+            renderMarkdown(reply.body, full);
+            reply.body.insertAdjacentHTML('beforeend',
+              '<div class="muted small" style="margin-top:8px;">Stopped.</div>');
+            messages.push({ role: 'assistant', content: full });
+          } else {
+            reply.body.innerHTML = '<p class="muted">Stopped before any output.</p>';
+            messages.pop();
+          }
+          return;
+        }
         reply.body.innerHTML = '<p class="form-error">' + esc(String(e)) + '</p>';
         messages.pop();
         usageLine.innerText = 'failed';
       } finally {
+        // Clear it here, not on success: an aborted or failed request must not
+        // leave the button stuck as a stop control.
+        generateController = null;
         setBusy(false);
         updateCode();
       }
@@ -546,7 +576,12 @@
       // a model switch avoids carrying that over.
       clearChat();
     });
-    sendBtn.addEventListener('click', send);
+    var generateController = null;
+    sendBtn.addEventListener('click', function () {
+        // One control, two jobs.
+        if (generateController) { generateController.abort(); return; }
+        send();
+    });
     chatInput.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
     });
