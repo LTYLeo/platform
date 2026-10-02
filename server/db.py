@@ -151,6 +151,25 @@ CREATE TABLE IF NOT EXISTS audit_log (
 );
 CREATE INDEX IF NOT EXISTS idx_audit_time ON audit_log (created_at);
 
+-- Contact and job-application submissions. These are the only tables written by
+-- unauthenticated visitors, so they carry their own rate limit and an IP column
+-- for abuse handling.
+CREATE TABLE IF NOT EXISTS submissions (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    kind        TEXT NOT NULL,              -- 'contact' | 'careers'
+    name        TEXT NOT NULL,
+    email       TEXT NOT NULL,
+    topic       TEXT,                       -- subject, or the role applied for
+    message     TEXT NOT NULL,
+    extra_json  TEXT,                       -- portfolio, links, anything else
+    file_path   TEXT,                       -- stored resume, relative to DATA_DIR
+    file_name   TEXT,
+    ip          TEXT,
+    created_at  TEXT NOT NULL,
+    handled_at  TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_submissions_kind ON submissions (kind, created_at);
+
 -- ---------------------------------------------------------------------------
 -- API v1 objects (sdk/API_CONTRACT.md §2-§4). Ids are opaque, type-prefixed
 -- strings rather than integers because they are handed to customers.

@@ -1020,6 +1020,7 @@ input[type="file"] { padding: 10px 14px; color: var(--muted); }
   white-space: nowrap;
 }
 
+.form-success { color: #56d364; font-size: 14px; margin-top: 12px; }
 .form-error {
   color: #fb7185;
   font-size: 13px;

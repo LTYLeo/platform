@@ -21,6 +21,7 @@ Run it on the machine that holds the database (the Pi), not over the network.
 from __future__ import annotations
 
 import argparse
+import pathlib
 import sys
 
 from server import billing, db
@@ -143,6 +144,51 @@ def cmd_users(args) -> None:
     conn.close()
 
 
+def cmd_submissions(args) -> None:
+    """Read what visitors sent through the contact and careers forms."""
+    conn = db.connect()
+    sql = "SELECT * FROM submissions"
+    where, params = [], []
+    if args.kind:
+        where.append("kind = ?")
+        params.append(args.kind)
+    if args.unhandled:
+        where.append("handled_at IS NULL")
+    if where:
+        sql += " WHERE " + " AND ".join(where)
+    sql += " ORDER BY id DESC LIMIT ?"
+    params.append(args.limit)
+
+    rows = conn.execute(sql, params).fetchall()
+    if not rows:
+        print("No submissions%s." % (" of kind " + args.kind if args.kind else ""))
+    for r in rows:
+        flag = " " if r["handled_at"] else "*"
+        print("%s #%-4s %-8s %-18s %-28s %s" % (
+            flag, r["id"], r["kind"], r["name"], r["email"], r["created_at"]))
+        print("        topic:   %s" % (r["topic"] or "-"))
+        print("        message: %s" % r["message"].replace("\n", "\n                 "))
+        if r["extra_json"]:
+            print("        extra:   %s" % r["extra_json"])
+        if r["file_path"]:
+            full = pathlib.Path(db.DATA_DIR) / r["file_path"]
+            print("        resume:  %s (%s)" % (full, r["file_name"]))
+    unhandled = conn.execute(
+        "SELECT COUNT(*) AS n FROM submissions WHERE handled_at IS NULL").fetchone()["n"]
+    print()
+    print("%d shown, %d unhandled in total  (* = unhandled)" % (len(rows), unhandled))
+    conn.close()
+
+
+def cmd_handled(args) -> None:
+    conn = db.connect()
+    conn.execute("UPDATE submissions SET handled_at = ? WHERE id = ?",
+                 (db.iso(db.utcnow()), args.submission_id))
+    conn.commit()
+    print("Marked #%s as handled." % args.submission_id)
+    conn.close()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="server.admin_cli", description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -183,6 +229,16 @@ def main() -> None:
     p = sub.add_parser("orders", help="list orders")
     p.add_argument("--status", default=None); p.add_argument("--limit", type=int, default=50)
     p.set_defaults(func=cmd_orders)
+
+    p = sub.add_parser("submissions", help="read contact and job-application submissions")
+    p.add_argument("--kind", choices=["contact", "careers"], default=None)
+    p.add_argument("--unhandled", action="store_true", help="only ones not yet marked handled")
+    p.add_argument("--limit", type=int, default=50)
+    p.set_defaults(func=cmd_submissions)
+
+    p = sub.add_parser("handled", help="mark a submission as dealt with")
+    p.add_argument("submission_id", type=int)
+    p.set_defaults(func=cmd_handled)
 
     p = sub.add_parser("mark-paid", help="confirm an order arrived and deliver it")
     p.add_argument("order_id"); p.add_argument("--trade-no", default=None)

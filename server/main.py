@@ -35,6 +35,10 @@ from fastapi.staticfiles import StaticFiles
 
 from server import billing, db, pricing, security
 from server.api_v1 import router as api_v1_router
+from server.submissions_api import (
+    admin_router as submissions_admin_router,
+    router as submissions_router,
+)
 from server.billing_api import (
     admin_router,
     billing_router,
@@ -143,6 +147,8 @@ async def block_private_paths(request: Request, call_next):
 # always wins over the site.
 app.include_router(api_v1_router)
 app.include_router(billing_router)
+app.include_router(submissions_router)
+app.include_router(submissions_admin_router)
 app.include_router(admin_router)
 app.include_router(internal_router)
 app.include_router(payments_router)
