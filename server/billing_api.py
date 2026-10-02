@@ -89,7 +89,8 @@ class CreateOrderBody(BaseModel):
     purpose: str = Field(default="api_credit")
     amount_cny: float = Field(gt=0, le=100000)
     months: int = Field(default=0, ge=0, le=120)
-    provider: str = Field(default="manual")
+    # None means "you choose" - see billing.default_provider().
+    provider: str | None = Field(default=None)
 
     @field_validator("purpose")
     @classmethod
@@ -659,9 +660,21 @@ async def payment_callback(provider_name: str, request: Request,
         raise fail(status.HTTP_400_BAD_REQUEST, "callback_rejected",
                    "Signature verification failed or the payment is not complete")
 
-    order_id = (parsed or {}).get("out_trade_no") or (parsed or {}).get("order_id")
-    if not order_id:
-        raise fail(status.HTTP_400_BAD_REQUEST, "callback_rejected", "No order reference in callback")
+    # A provider may know our order id - from its own field, or parsed out of a
+    # remark. Fall back to the raw trade number for providers that echo it back.
+    order_id = ((parsed or {}).get("_order_id")
+                or (parsed or {}).get("out_trade_no")
+                or (parsed or {}).get("order_id"))
+
+    if not order_id or (parsed or {}).get("_unmatched"):
+        # The money arrived but we cannot tell whose it is. Record it rather than
+        # rejecting it: a payer who forgot the reference is otherwise simply out
+        # of pocket, with nothing for either side to point at.
+        billing.record_unmatched_payment(conn, provider_name, trade_no, parsed)
+        raise fail(
+            status.HTTP_409_CONFLICT, "unmatched_payment",
+            "Payment received but no order reference was found. An admin will match it.",
+        )
 
     ok2, result = billing.mark_order_paid(
         conn, order_id, provider_trade_no=trade_no, payload=parsed

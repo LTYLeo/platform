@@ -1051,6 +1051,25 @@ input[type="file"] { padding: 10px 14px; color: var(--muted); }
 .billing-intent p { margin: 0 0 8px; }
 .billing-intent p:last-child { margin-bottom: 0; }
 .billing-intent code { font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
+.ref-block {
+  margin: 14px 0; padding: 14px 16px; border-radius: 12px;
+  background: rgba(59,130,246,.10); border: 1px solid rgba(59,130,246,.35);
+}
+.ref-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; }
+.ref-value { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ref-value code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 17px; font-weight: 600; letter-spacing: .02em;
+  color: #fff; background: rgba(0,0,0,.35); padding: 7px 12px; border-radius: 8px;
+  user-select: all;
+}
+.ref-copy {
+  padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 13px;
+  background: rgba(59,130,246,.22); border: 1px solid rgba(59,130,246,.5); color: #fff;
+}
+.ref-copy:hover { background: rgba(59,130,246,.35); }
+.ref-hint { font-size: 12px; color: var(--muted); margin-top: 8px; }
+
 .qr-holder { background: #fff; padding: 8px; border-radius: 8px; display: inline-block; margin: 6px 0; }
 
 .form-success { color: #56d364; font-size: 14px; margin-top: 12px; }

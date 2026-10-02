@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import json
 import secrets
+import re
 import sqlite3
 from datetime import datetime, timedelta
 from typing import Protocol
@@ -141,6 +142,11 @@ class ManualProvider:
 
     name = "manual"
 
+    @property
+    def configured(self) -> bool:
+        # Always available: a human confirming a transfer needs no credentials.
+        return True
+
     def create_intent(self, order: sqlite3.Row) -> PaymentIntent:
         return PaymentIntent(
             kind="manual",
@@ -221,7 +227,20 @@ class AfdianProvider:
             return False, None, {}
         if int(order.get("status", 0)) != 2:      # 2 = paid
             return False, None, order
-        return True, order.get("out_trade_no"), order
+
+        # Afdian has no per-order checkout, so `out_trade_no` is Afdian's own
+        # trade number and can never equal our order id. The link back to us is
+        # the reference the payer typed into the remark - which is why the
+        # payment step shows it in capitals and offers to copy it.
+        #
+        # When the remark holds no reference the payment is still returned, so
+        # the caller can record it. Dropping it would leave a payer who forgot
+        # the reference out of pocket with nothing to point at.
+        remark = str(order.get("remark") or "")
+        match = re.search(r"\b(ord_[A-Za-z0-9_-]+)\b", remark)
+        if match:
+            return True, order.get("out_trade_no"), {**order, "_order_id": match.group(1)}
+        return True, order.get("out_trade_no"), {**order, "_unmatched": True}
 
 
 class WechatNativeProvider:
@@ -260,6 +279,27 @@ class WechatNativeProvider:
         return False, None, {}
 
 
+#: Preference order when the caller does not name a provider. Automated first, so
+#: a configured provider is actually used; `manual` last, because it always
+#: "works" and would otherwise shadow everything above it.
+PROVIDER_PREFERENCE = ("afdian", "wechat", "manual")
+
+
+def default_provider(providers: dict[str, "PaymentProvider"] | None = None) -> str:
+    """The provider a caller gets when it does not choose one.
+
+    The client cannot know which providers have credentials - only the server
+    can - so leaving the choice to the client means the default wins and a
+    configured provider is never reached.
+    """
+    providers = providers if providers is not None else build_providers()
+    for name in PROVIDER_PREFERENCE:
+        candidate = providers.get(name)
+        if candidate is not None and getattr(candidate, "configured", True):
+            return name
+    return "manual"
+
+
 def build_providers() -> dict[str, PaymentProvider]:
     import os
 
@@ -288,8 +328,9 @@ def create_order(
     amount_cny: float,
     *,
     months: int = 0,
-    provider: str = "manual",
+    provider: str | None = None,
 ) -> sqlite3.Row:
+    provider = provider or default_provider()
     if purpose not in PURPOSES:
         raise ValueError("purpose must be one of %s" % (PURPOSES,))
     if provider not in PROVIDERS:
@@ -361,6 +402,33 @@ def fulfil_order(conn: sqlite3.Connection, order: sqlite3.Row) -> dict:
     audit(conn, None, "order.fulfilled", result)
     conn.commit()
     return result
+
+
+def record_unmatched_payment(conn: sqlite3.Connection, provider: str, trade_no: str | None,
+                             payload: dict | None) -> None:
+    """Keep a payment we could not attach to an order.
+
+    The alternative is a 400 and a shrug, which loses the only record that
+    someone paid.
+    """
+    payload = payload or {}
+    conn.execute(
+        """
+        INSERT INTO unmatched_payments
+            (provider, trade_no, amount_cny, payer, remark, payload_json, created_at)
+        VALUES (?,?,?,?,?,?,?)
+        """,
+        (
+            provider,
+            trade_no,
+            float(payload.get("total_amount") or 0) or None,
+            str(payload.get("user_name") or payload.get("user_id") or "") or None,
+            str(payload.get("remark") or "") or None,
+            json.dumps(payload, ensure_ascii=False),
+            db.iso(db.utcnow()),
+        ),
+    )
+    conn.commit()
 
 
 def mark_order_paid(

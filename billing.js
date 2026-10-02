@@ -196,15 +196,34 @@
       return;
     }
 
-    var ref = '<p class="muted small">' + t('Order reference') + ': <code>' +
-              esc(orderId) + '</code></p>';
+    // Big, copyable, and above the button. Afdian has no per-order checkout, so
+    // this string is the only thing that ties the payment back to the account -
+    // it has to be the most obvious element on the panel, not a footnote.
+    var ref =
+      '<div class="ref-block">' +
+        '<div class="ref-label">' + t('Paste this into the payment message') + '</div>' +
+        '<div class="ref-value">' +
+          '<code id="billingRef">' + esc(orderId) + '</code>' +
+          '<button type="button" class="ref-copy" id="billingRefCopy">' + t('Copy') + '</button>' +
+        '</div>' +
+        '<div class="ref-hint">' + t('Without it your payment cannot be matched automatically.') + '</div>' +
+      '</div>';
 
     if (intent.kind === 'external_link') {
+      var url = esc(intent.url || intent.link || '#');
       say(out,
         '<p>' + t('Complete the payment on the next page, then come back here.') + '</p>' +
-        '<a class="btn block" href="' + esc(intent.url || intent.link || '#') +
-          '" target="_blank" rel="noopener">' + t('Open payment page') + '</a>' + ref, 'ok');
+        ref +
+        '<a class="btn block" id="billingPayLink" href="' + url +
+          '" target="_blank" rel="noopener">' + t('Open payment page') + '</a>' +
+        '<p class="muted small" style="margin-top:12px;">' +
+          t('Forgot to paste it? Your payment is still recorded and we will match it by hand.') +
+        '</p>', 'ok');
       startPolling(orderId);
+
+      // Open it for them. Popup blockers may refuse - the button above is the
+      // fallback, which is why it stays even when this succeeds.
+      try { window.open(intent.url || intent.link, '_blank', 'noopener'); } catch (e) {}
 
     } else if (intent.kind === 'qrcode') {
       say(out,
@@ -218,6 +237,27 @@
       // is written for the person paying.
       var note = intent.note || t('Contact us to arrange payment, quoting the order reference.');
       say(out, '<p>' + esc(note) + '</p>' + ref, 'ok');
+    }
+
+    var copy = out.querySelector('#billingRefCopy');
+    if (copy) {
+      copy.addEventListener('click', function () {
+        var code = out.querySelector('#billingRef');
+        var text = code ? code.textContent : orderId;
+        var done = function () {
+          copy.textContent = t('Copied');
+          setTimeout(function () { copy.textContent = t('Copy'); }, 1500);
+        };
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(text).then(done).catch(function () {});
+        } else {
+          // Older browsers: select it so a manual copy still works.
+          var r = document.createRange();
+          r.selectNodeContents(code);
+          var sel = window.getSelection();
+          sel.removeAllRanges(); sel.addRange(r);
+        }
+      });
     }
   }
 

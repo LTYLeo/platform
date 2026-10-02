@@ -24,7 +24,7 @@ import argparse
 import pathlib
 import sys
 
-from server import billing, db
+from server import db
 
 
 def _find_user(conn, email: str):
@@ -189,6 +189,67 @@ def cmd_handled(args) -> None:
     conn.close()
 
 
+def cmd_unmatched(args) -> None:
+    """Payments that arrived without a usable order reference.
+
+    These exist because a payer can forget to paste the reference, and the money
+    is real either way. Each line carries enough to find them in the provider's
+    own dashboard and credit the right account.
+    """
+    conn = db.connect()
+    sql = "SELECT * FROM unmatched_payments"
+    if not args.all:
+        sql += " WHERE resolved_at IS NULL"
+    sql += " ORDER BY id DESC LIMIT ?"
+    rows = conn.execute(sql, (args.limit,)).fetchall()
+    if not rows:
+        print("No unmatched payments.%s" % ("" if args.all else " (use --all to include resolved)"))
+    for r in rows:
+        flag = " " if r["resolved_at"] else "*"
+        print("%s #%-4s %-8s ¥%-9s %-16s %s" % (
+            flag, r["id"], r["provider"], r["amount_cny"] or "?", r["payer"] or "-",
+            r["created_at"]))
+        print("        trade:  %s" % (r["trade_no"] or "-"))
+        print("        remark: %r" % (r["remark"] or ""))
+        if r["resolved_note"]:
+            print("        note:   %s" % r["resolved_note"])
+    pending = conn.execute(
+        "SELECT COUNT(*) AS n FROM unmatched_payments WHERE resolved_at IS NULL").fetchone()["n"]
+    print()
+    print("%d shown, %d unresolved  (* = unresolved)" % (len(rows), pending))
+    print("Match one with: admin_cli resolve-unmatched <id> <email>")
+    conn.close()
+
+
+def cmd_resolve_unmatched(args) -> None:
+    """Credit a user for a payment that carried no reference."""
+    conn = db.connect()
+    row = conn.execute("SELECT * FROM unmatched_payments WHERE id = ?", (args.payment_id,)).fetchone()
+    if row is None:
+        sys.exit("No unmatched payment #%s" % args.payment_id)
+    if row["resolved_at"]:
+        sys.exit("Payment #%s is already resolved (%s)" % (args.payment_id, row["resolved_note"]))
+
+    user = conn.execute("SELECT * FROM users WHERE lower(email) = lower(?)",
+                        (args.email,)).fetchone()
+    if user is None:
+        sys.exit("No account with email %s" % args.email)
+
+    amount = args.amount if args.amount is not None else (row["amount_cny"] or 0)
+    if not amount:
+        sys.exit("No amount on the payment; pass --amount to state it.")
+
+    db.grant_credit(conn, int(user["id"]), float(amount),
+                    "unmatched payment #%s (%s)" % (row["id"], row["provider"]))
+    conn.execute(
+        "UPDATE unmatched_payments SET resolved_at = ?, resolved_note = ? WHERE id = ?",
+        (db.iso(db.utcnow()),
+         "credited %.2f CNY to %s" % (float(amount), user["email"]), row["id"]))
+    conn.commit()
+    print("Credited ¥%.2f to %s for unmatched payment #%s." % (float(amount), user["email"], row["id"]))
+    conn.close()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="server.admin_cli", description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -239,6 +300,18 @@ def main() -> None:
     p = sub.add_parser("handled", help="mark a submission as dealt with")
     p.add_argument("submission_id", type=int)
     p.set_defaults(func=cmd_handled)
+
+    p = sub.add_parser("unmatched", help="payments that arrived with no order reference")
+    p.add_argument("--all", action="store_true", help="include already resolved ones")
+    p.add_argument("--limit", type=int, default=50)
+    p.set_defaults(func=cmd_unmatched)
+
+    p = sub.add_parser("resolve-unmatched", help="credit an account for an unmatched payment")
+    p.add_argument("payment_id", type=int)
+    p.add_argument("email", help="the account to credit")
+    p.add_argument("--amount", type=float, default=None,
+                   help="override the amount (if the provider did not report one)")
+    p.set_defaults(func=cmd_resolve_unmatched)
 
     p = sub.add_parser("mark-paid", help="confirm an order arrived and deliver it")
     p.add_argument("order_id"); p.add_argument("--trade-no", default=None)

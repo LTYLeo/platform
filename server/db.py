@@ -170,6 +170,21 @@ CREATE TABLE IF NOT EXISTS submissions (
 );
 CREATE INDEX IF NOT EXISTS idx_submissions_kind ON submissions (kind, created_at);
 
+-- Money that arrived without a usable order reference. Kept so a payer who
+-- forgot to paste the reference can still be credited after the fact.
+CREATE TABLE IF NOT EXISTS unmatched_payments (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    provider     TEXT NOT NULL,
+    trade_no     TEXT,
+    amount_cny   REAL,
+    payer        TEXT,
+    remark       TEXT,
+    payload_json TEXT,
+    created_at   TEXT NOT NULL,
+    resolved_at  TEXT,
+    resolved_note TEXT
+);
+
 -- ---------------------------------------------------------------------------
 -- API v1 objects (sdk/API_CONTRACT.md §2-§4). Ids are opaque, type-prefixed
 -- strings rather than integers because they are handed to customers.
