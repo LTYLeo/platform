@@ -35,6 +35,7 @@ PLANS: dict[str, dict] = {
     "free": {
         "name": "Free",
         "tagline": "Try Sigma",
+        "tagline_zh": "试试 Sigma",
         "price_cny": 0.0,
         "daily_limit": 20,
         # The two cheapest models only. This is the tier that costs us money on
@@ -49,10 +50,12 @@ PLANS: dict[str, dict] = {
         # the sentence says exactly what you get. Limits belong in the sentence,
         # not in the heading - nobody upgrades to "300 messages".
         "summary": "See how AI can help with everyday questions, drafts and small tasks.",
+        "summary_zh": "看看 AI 如何帮你处理日常问题、草稿和小任务。",
     },
     "plus": {
         "name": "Plus",
         "tagline": "Your everyday assistant",
+        "tagline_zh": "你的日常助手",
         "price_cny": 10.0,
         "daily_limit": 300,
         "models": [m for m in MODEL_CHOICES if m != "large"],
@@ -62,10 +65,12 @@ PLANS: dict[str, dict] = {
         "priority": False,
         "context": False,
         "summary": "For work you come back to daily. 300 messages a day, GTC-2.5 Turbo, and every model except the frontier previews.",
+        "summary_zh": "适合每天都要用的人。每天 300 条消息，GTC-2.5 Turbo，以及除前沿预览外的全部模型。",
     },
     "pro": {
         "name": "Pro",
         "tagline": "Maximum power",
+        "tagline_zh": "最强性能",
         "price_cny": 100.0,
         "daily_limit": None,          # unlimited
         "models": None,               # everything, including models added later
@@ -74,6 +79,7 @@ PLANS: dict[str, dict] = {
         "frontier": True,
         "context": True,
         "summary": "For people who rely on our most powerful models all day. No daily cap, conversation context, and limited access to frontier research previews.",
+        "summary_zh": "适合全天依赖我们最强模型的人。每日不限量、支持多轮上下文，并可有限访问前沿研究预览。",
     },
     "admin": {
         "name": "Admin",
