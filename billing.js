@@ -23,7 +23,7 @@
   // --------------------------------------------------------------------- //
 
   function t(s) {
-    return window.TAII18n && window.TAII18n.t ? window.TAII18n.t(s) : s;
+    return window.TAIi18n && window.TAIi18n.t ? window.TAIi18n.t(s) : s;
   }
 
   function esc(s) {
@@ -55,8 +55,16 @@
   // Markup
   // --------------------------------------------------------------------- //
 
+  // Which language the cached dialog was built in. The strings are resolved
+  // once, when the markup is assembled, so a language switch has to discard it -
+  // re-scanning the DOM cannot help once the English source text is gone.
+  var builtLang = null;
+
   function build() {
-    if (root) return root;
+    var lang = (window.TAIi18n && window.TAIi18n.lang) || 'en';
+    if (root && builtLang === lang) return root;
+    if (root) { root.remove(); root = null; }
+    builtLang = lang;
 
     root = document.createElement('div');
     root.className = 'modal-overlay';
@@ -206,7 +214,7 @@
     // actually removes it from the layer.
     root.hidden = false;
     root.classList.remove('hidden');
-    if (window.TAII18n && window.TAII18n.translate) window.TAII18n.translate(root);
+    if (window.TAIi18n && window.TAIi18n.translate) window.TAIi18n.translate(root);
     root.querySelector('#billingResult').hidden = true;
     const code = root.querySelector('#billingCode');
     if (code) code.value = '';
