@@ -171,7 +171,10 @@ class AfdianProvider:
     def __init__(self, token: str | None = None, user_id: str | None = None, page: str | None = None):
         self.token = token
         self.user_id = user_id
-        self.page = page or "https://afdian.com/a/tai_research"
+        # No default. Guessing a page URL risks sending someone's money to
+        # whoever happens to own the guessed name, which is far worse than
+        # refusing to offer the option.
+        self.page = (page or "").strip() or None
 
     @property
     def configured(self) -> bool:
@@ -181,6 +184,12 @@ class AfdianProvider:
         if not self.configured:
             raise RuntimeError(
                 "Afdian is not configured: set TAI_AFDIAN_TOKEN and TAI_AFDIAN_USER_ID"
+            )
+        if not self.page:
+            raise RuntimeError(
+                "Afdian needs TAI_AFDIAN_PAGE - your own page URL "
+                "(https://afdian.com/a/<your-name>). Without it there is nowhere "
+                "safe to send the payer."
             )
         # Afdian has no per-order checkout: the user picks an amount on the page,
         # so the order id has to travel in the remark and be matched by hand or by
@@ -630,6 +639,10 @@ def entitlements(conn: sqlite3.Connection, user_id: int) -> dict:
         "plan": sub["plan"],
         "subscription": sub,
         "balance_cny": state["balance_cny"],
+        # Staff accounts bypass the balance check entirely, so the number is not
+        # a limit. Reporting it anyway showed "-0.0037" once usage passed the free
+        # allowance, which reads as a debt that does not exist.
+        "unlimited": reason == "admin",
         "free_tokens": {
             "granted": state["free_granted"],
             "used": state["free_used"],

@@ -334,13 +334,15 @@
           u.requests_this_month.toLocaleString(locale());
         document.getElementById('usageTokens').textContent =
           u.tokens_this_month.toLocaleString(locale());
-        document.getElementById('usageBalance').textContent = u.balance_cny.toFixed(2);
+        document.getElementById('usageBalance').textContent =
+          u.unlimited ? '∞' : Number(u.balance_cny || 0).toFixed(2);
 
         document.getElementById('usagePeriod').textContent =
           t('This month') + ' · ' + u.period;
 
-        document.getElementById('freeTokensLeft').textContent =
-          t('Free tokens left') + ': ' + u.free_tokens.remaining.toLocaleString(locale());
+        document.getElementById('freeTokensLeft').textContent = u.unlimited
+          ? t('Unmetered — staff account')
+          : t('Free tokens left') + ': ' + u.free_tokens.remaining.toLocaleString(locale());
 
         // Show the amount accrued this month next to the balance.
         document.getElementById('usageCost').textContent =

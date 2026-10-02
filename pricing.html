@@ -552,7 +552,9 @@
     if (!el) return;
     if (!user) { el.textContent = '0.00'; return; }
     window.TAIAuth.request('GET', '/billing/entitlements')
-      .then(function (e) { el.textContent = Number(e.balance_cny || 0).toFixed(2); })
+      .then(function (e) {
+        el.textContent = e.unlimited ? '∞' : Number(e.balance_cny || 0).toFixed(2);
+      })
       .catch(function () { el.textContent = '—'; });
   });
   </script>
