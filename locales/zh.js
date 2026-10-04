@@ -376,6 +376,15 @@ window.TAI_I18N.zh = {
   "Help curate and preprocess training datasets": "协助整理和预处理训练数据集",
   "Help grow and engage our developer community. You'll create content, organize events, and ensure our users have the best possible experience.": "帮助发展并活跃我们的开发者社区。你将创作内容、组织活动，并确保用户获得最佳体验。",
   "Here's a simple example of how to use the chat completions endpoint:": "以下是使用对话补全接口的简单示例：",
+  // Leadership names stay in Latin script in the English edition and are
+  // written properly here. Keyed on the markup, like everything else in this
+  // file, so the two editions stay independent.
+  "Li Tianyi": "李天祎",
+  "Wang Zhengming": "王正明",
+  "Yang Yuanshuo": "杨元硕",
+  "Lu Yu": "陆昱",
+  "Duan Yongcheng": "段咏成",
+  "Wang Xiaoyi": "王效一",
   "Home": "首页",
   "How accurate is the token calculator?": "Token 计算器的准确度如何？",
   "How can we help you?": "我们能为你提供什么帮助？",
