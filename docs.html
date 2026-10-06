@@ -258,7 +258,7 @@ for event in stream:
 
           <h3 id="stopping">Stopping a generation</h3>
           <p>
-            There is no cancel endpoint to call, because the stream <em>is</em> the request:
+            There is no cancel endpoint to call, because the stream is the request:
             closing your side of it is the cancellation. The server notices, stops the model and
             releases the inference slot &mdash; a request made immediately afterwards is not
             queued behind the one you abandoned.
@@ -362,7 +362,7 @@ print(thread.id)                   # thrd_...</pre>
 
           <h2 id="messages">Messages</h2>
           <p>
-            One call appends your message <em>and</em> generates the reply, returning both so you
+            One call appends your message and generates the reply, returning both so you
             do not need a second round trip.
             <code class="code-inline">POST /api/v1/threads/{id}/messages</code>
           </p>
@@ -529,7 +529,7 @@ except InsufficientBalanceError as exc:
           </ul>
           <p class="note">
             Per-key rate limits are not switched on yet, and neither is automatic charging for
-            overage &mdash; the platform is a research preview. Balance <em>is</em> enforced.
+            overage &mdash; the platform is a research preview. Balance is enforced.
           </p>
 
           <h2 id="sdk">SDK Reference</h2>
@@ -692,7 +692,7 @@ asyncio.run(main())</pre>
   </script>
 
   <script src="config.js?v=dd074658b5"></script>
-  <script src="locales/zh.js?v=636386a25e"></script>
+  <script src="locales/zh.js?v=2495977971"></script>
   <script src="i18n.js?v=7ec564fff9"></script>
   <script src="auth.js?v=414d7938ca"></script>
   <script src="billing.js?v=15137451a6"></script>
