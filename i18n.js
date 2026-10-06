@@ -140,6 +140,52 @@
     node.nodeValue = lead + translated + trail;
   }
 
+  /* ---------------------------------------------------------------- blocks */
+
+  /* Inline tags split a sentence into several text nodes and the node pass above
+     can only match one node at a time, so a sentence containing <strong>, <em> or
+     <code> can never be translated however complete the dictionary is. Rather
+     than stripping the markup out of the documentation - which loses the emphasis
+     and the code styling - a leaf block whose whole text matches a key is
+     replaced outright. The dictionary value may contain inline HTML for exactly
+     this reason. */
+  var BLOCK_SELECTOR = 'p, li, td, th, dt, dd, figcaption, h1, h2, h3, h4, h5, h6';
+  var NESTED = 'p, li, div, ul, ol, table, section, article, pre, blockquote';
+
+  var blockOriginals = new WeakMap();
+  var blockList = [];
+
+  function collectBlocks(root) {
+    var out = [];
+    var els = (root || document.body).querySelectorAll(BLOCK_SELECTOR);
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      if (el.closest && el.closest('[data-i18n-ignore]')) continue;
+      if (el.querySelector(NESTED)) continue;      // not a leaf: handled deeper
+      if (!normalize(el.textContent)) continue;
+      out.push(el);
+    }
+    return out;
+  }
+
+  function applyToBlock(el) {
+    if (!blockOriginals.has(el)) {
+      blockOriginals.set(el, el.innerHTML);
+      blockList.push(el);
+    }
+    var original = blockOriginals.get(el);
+
+    if (current === 'en') {
+      if (el.innerHTML !== original) el.innerHTML = original;
+      return true;
+    }
+    var key = normalize(el.textContent);
+    var hit = lookup(key);
+    if (hit === null) return false;
+    el.innerHTML = hit;
+    return true;
+  }
+
   function applyToAttr(entry) {
     var el = entry.el;
     var attr = entry.attr;
@@ -257,6 +303,11 @@
     var nodes = collectTextNodes(scope);
     for (var i = 0; i < nodes.length; i++) remember(nodes[i], nodes[i].nodeValue);
     for (i = 0; i < nodes.length; i++) applyTo(nodes[i]);
+
+    // After the node pass, so a simple element is handled the cheap way and only
+    // mixed-content blocks fall through to here.
+    var blocks = collectBlocks(scope);
+    for (i = 0; i < blocks.length; i++) applyToBlock(blocks[i]);
 
     var attrEntries = collectAttrTargets(scope);
     for (i = 0; i < attrEntries.length; i++) applyToAttr(attrEntries[i]);

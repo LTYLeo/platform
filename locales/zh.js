@@ -992,6 +992,6 @@ window.TAI_I18N.zh = {
   "There is no cancel endpoint to call, because the stream is the request: closing your side of it is the cancellation. The server notices, stops the model and releases the inference slot — a request made immediately afterwards is not queued behind the one you abandoned.": "没有可以调用的取消接口，因为流本身就是请求：关闭你这一端就是取消。服务端会察觉，停止模型并释放推理资源槽 —— 紧接着发出的请求不会排在你放弃的那个后面。",
   "This is the same mechanism the Playground's stop button uses. Verified against the running service: a stream abandoned two seconds in was followed by a fresh request that returned in 0.2s.": "这正是 Playground 停止按钮所用的机制。已在运行中的服务上验证：一条流在开始两秒后被放弃，随后的新请求 0.2 秒就返回了。",
   "Two things worth knowing before building on it:": "在此之上构建之前，有两件事值得知道：",
-  "Text already generated is recorded and billed. Stopping is not an undo; the tokens produced before you closed the connection were produced.": "已经生成的文本会被记录并计费。停止不是撤销；在你关闭连接之前产出的 token 确实已经产出了。",
-  "A non-streaming request cannot be cancelled. With stream: false the answer is computed before anything is sent, so there is nothing to close until it is already done. Stream anything a user might want to interrupt.": "非流式请求无法取消。当 stream: false 时，答案在发送任何内容之前就已算完，所以在它完成之前根本没有东西可以关闭。凡是用户可能想打断的，都应该用流式。",
+  "Text already generated is recorded and billed. Stopping is not an undo; the tokens produced before you closed the connection were produced.": "<strong>已经生成的文本会被记录并计费。</strong>停止不是撤销；在你关闭连接之前产出的 token 确实已经产出了。",
+  "A non-streaming request cannot be cancelled. With stream: false the answer is computed before anything is sent, so there is nothing to close until it is already done. Stream anything a user might want to interrupt.": "<strong>非流式请求无法取消。</strong>当 <code>stream: false</code> 时，答案在发送任何内容之前就已算完，所以在它完成之前根本没有东西可以关闭。凡是用户可能想打断的，都应该用流式。",
 };
