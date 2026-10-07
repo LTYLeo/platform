@@ -302,6 +302,17 @@ nav.site-nav a.btn { color: #ffffff; }
 
 .card-title { font-weight: 600; font-size: 18px; color: var(--text); margin-bottom: 8px; }
 .card-desc { color: #b0bacf; font-size: 14px; line-height: 1.55; flex: 1; }
+
+/* A card whose last element is a button, laid out so the buttons line up across
+   a row however long each description runs. `.card-desc` already carried
+   `flex: 1`, written in expectation of this container - the `display: flex` was
+   simply missing, so the flex property did nothing and the button floated to
+   wherever the text happened to end. Applied by class rather than to `.card`,
+   which sixty other cards use in ways that do not want a flex container. */
+.card-stack {
+  display: flex;
+  flex-direction: column;
+}
 .card-link { margin-top: 14px; color: #60a5fa; font-size: 14px; font-weight: 500; }
 .card-clickable:hover .card-link { color: #93c5fd; }
 
